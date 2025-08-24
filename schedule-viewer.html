@@ -1165,8 +1165,24 @@
             });
             html += '</tr>';
 
+            // Get all activity times and add them to the sorted times
+            const activityTimes = new Set();
+            activities.forEach(activity => {
+                if (activity.time && activity.time.includes('-')) {
+                    activityTimes.add(activity.time);
+                }
+            });
+            
+            // Combine school times and activity times
+            const allTimeSlots = new Set([...sortedTimes, ...activityTimes]);
+            const finalSortedTimes = Array.from(allTimeSlots).sort((a, b) => {
+                const timeA = a.split(' - ')[0];
+                const timeB = b.split(' - ')[0];
+                return parseTime(timeA) - parseTime(timeB);
+            });
+
             // Data rows
-            sortedTimes.forEach(time => {
+            finalSortedTimes.forEach(time => {
                 // Check if A and B schedules are identical for this time across all days
                 let allDaysIdentical = true;
                 const dayComparisons = {};
@@ -1205,7 +1221,7 @@
                         // Check for activities on this day and time
                         const dayActivities = activities.filter(activity => 
                             activity.days.includes(dayName) && 
-                            checkTimeConflict(time, activity.time)
+                            checkTimeMatch(time, activity.time)
                         );
                         
                         if (period && dayActivities.length > 0) {
@@ -1252,7 +1268,7 @@
                         // Check for activities on this day and time
                         const dayActivities = activities.filter(activity => 
                             activity.days.includes(dayName) && 
-                            checkTimeConflict(time, activity.time)
+                            checkTimeMatch(time, activity.time)
                         );
                         
                         if (aPeriod && dayActivities.length > 0) {
@@ -1297,7 +1313,7 @@
                         // Check for activities on this day and time
                         const dayActivities = activities.filter(activity => 
                             activity.days.includes(dayName) && 
-                            checkTimeConflict(time, activity.time)
+                            checkTimeMatch(time, activity.time)
                         );
                         
                         if (bPeriod && dayActivities.length > 0) {
@@ -2172,8 +2188,7 @@ Room: B112`;
         }
 
         function checkTimeConflict(scheduleTime, activityTime) {
-            // Simple conflict detection - check if times overlap
-            // This is a basic implementation that can be enhanced
+            // Check if times overlap or if they're the same time slot
             try {
                 const parseTimeRange = (timeStr) => {
                     const parts = timeStr.split(' - ');
@@ -2194,6 +2209,11 @@ Room: B112`;
             } catch (error) {
                 return false;
             }
+        }
+
+        function checkTimeMatch(scheduleTime, activityTime) {
+            // Check if this is the exact same time slot or if activity should show
+            return scheduleTime === activityTime || checkTimeConflict(scheduleTime, activityTime);
         }
 
         // Auto-load saved state on page load

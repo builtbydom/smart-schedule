@@ -1183,6 +1183,9 @@
 
             // Data rows
             finalSortedTimes.forEach(time => {
+                console.log('Processing time slot:', time);
+                console.log('Available activities:', activities);
+                
                 // Check if A and B schedules are identical for this time across all days
                 let allDaysIdentical = true;
                 const dayComparisons = {};
@@ -1219,10 +1222,12 @@
                         const period = comparison.aPeriod || comparison.bPeriod; // Use whichever exists
                         
                         // Check for activities on this day and time
-                        const dayActivities = activities.filter(activity => 
-                            activity.days.includes(dayName) && 
-                            checkTimeMatch(time, activity.time)
-                        );
+                        const dayActivities = activities.filter(activity => {
+                            const dayMatch = activity.days.includes(dayName);
+                            const timeMatch = checkTimeMatch(time, activity.time);
+                            console.log(`Activity ${activity.name}: day ${dayName} match=${dayMatch}, time ${time} vs ${activity.time} match=${timeMatch}`);
+                            return dayMatch && timeMatch;
+                        });
                         
                         if (period && dayActivities.length > 0) {
                             // Conflict: both school and activity
@@ -1266,10 +1271,12 @@
                         const aPeriod = comparison.aPeriod;
                         
                         // Check for activities on this day and time
-                        const dayActivities = activities.filter(activity => 
-                            activity.days.includes(dayName) && 
-                            checkTimeMatch(time, activity.time)
-                        );
+                        const dayActivities = activities.filter(activity => {
+                            const dayMatch = activity.days.includes(dayName);
+                            const timeMatch = checkTimeMatch(time, activity.time);
+                            console.log(`Activity ${activity.name}: day ${dayName} match=${dayMatch}, time ${time} vs ${activity.time} match=${timeMatch}`);
+                            return dayMatch && timeMatch;
+                        });
                         
                         if (aPeriod && dayActivities.length > 0) {
                             // Conflict: both school and activity
@@ -1311,10 +1318,12 @@
                         const bPeriod = comparison.bPeriod;
                         
                         // Check for activities on this day and time
-                        const dayActivities = activities.filter(activity => 
-                            activity.days.includes(dayName) && 
-                            checkTimeMatch(time, activity.time)
-                        );
+                        const dayActivities = activities.filter(activity => {
+                            const dayMatch = activity.days.includes(dayName);
+                            const timeMatch = checkTimeMatch(time, activity.time);
+                            console.log(`Activity ${activity.name}: day ${dayName} match=${dayMatch}, time ${time} vs ${activity.time} match=${timeMatch}`);
+                            return dayMatch && timeMatch;
+                        });
                         
                         if (bPeriod && dayActivities.length > 0) {
                             // Conflict: both school and activity
@@ -2092,11 +2101,13 @@ Room: B112`;
             };
 
             activities.push(activity);
+            console.log('Activity added:', activity);
+            console.log('All activities:', activities);
             saveActivities();
             displayActivities();
             displaySchedule(); // Refresh schedule to show activities
             clearActivityForm();
-            showMessage(`Activity "${name}" added successfully! 🎉`, 'success');
+            showMessage(`Activity "${name}" added successfully! 🎉 Check browser console for debug info.`, 'success');
         }
 
         function editActivity(id) {

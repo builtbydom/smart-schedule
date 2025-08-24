@@ -1109,8 +1109,14 @@
         function displaySchedule() {
             const displayArea = document.getElementById('scheduleDisplay');
             
-            if (Object.keys(scheduleData).length === 0) {
+            if (Object.keys(scheduleData).length === 0 && activities.length === 0) {
                 displayArea.innerHTML = '';
+                return;
+            }
+
+            // If we only have activities (no school schedule), display activities-only view
+            if (Object.keys(scheduleData).length === 0 && activities.length > 0) {
+                displayActivitiesOnlySchedule();
                 return;
             }
 
@@ -2227,10 +2233,86 @@ Room: B112`;
             return scheduleTime === activityTime || checkTimeConflict(scheduleTime, activityTime);
         }
 
+        function displayActivitiesOnlySchedule() {
+            const displayArea = document.getElementById('scheduleDisplay');
+            
+            // Create a simple activities-only schedule
+            let html = `
+                <div class="student-info">
+                    <h2>⚽ Your Activities Schedule</h2>
+                    <p>Add your school schedule for a complete view</p>
+                </div>
+            `;
+
+            // Get all unique activity times
+            const activityTimes = [...new Set(activities.map(a => a.time))].sort((a, b) => {
+                const timeA = a.split(' - ')[0];
+                const timeB = b.split(' - ')[0];
+                return parseTime(timeA) - parseTime(timeB);
+            });
+
+            // Get all unique days from activities
+            const allDays = [...new Set(activities.flatMap(a => a.days))];
+            const dayOrder = ['Mon', 'Tues', 'Weds', 'Thurs', 'Fri', 'Sat', 'Sun'];
+            const sortedDays = dayOrder.filter(day => allDays.includes(day));
+
+            if (activityTimes.length > 0) {
+                html += '<div class="schedule-container">';
+                html += '<table class="schedule-table">';
+                
+                // Header row
+                html += '<tr><th class="time-column">Time</th>';
+                sortedDays.forEach(day => {
+                    html += `<th>${day}</th>`;
+                });
+                html += '</tr>';
+
+                // Activity rows
+                activityTimes.forEach(time => {
+                    html += '<tr>';
+                    html += `<td class="time-column">${time}</td>`;
+                    
+                    sortedDays.forEach(day => {
+                        const dayActivity = activities.find(a => a.time === time && a.days.includes(day));
+                        if (dayActivity) {
+                            html += `<td class="class-cell activity">
+                                <div class="class-name">${dayActivity.name}</div>
+                                <div class="teacher-name">Extracurricular Activity</div>
+                                <div class="room-name">${dayActivity.time}</div>
+                            </td>`;
+                        } else {
+                            html += '<td class="class-cell">-</td>';
+                        }
+                    });
+                    html += '</tr>';
+                });
+
+                html += '</table>';
+                html += '</div>';
+
+                // Add legend
+                html += `
+                    <div class="legend">
+                        <h3>🎨 Color Legend</h3>
+                        <div class="legend-grid">
+                            <div class="legend-item activity">⚽ Activities</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            displayArea.innerHTML = html;
+        }
+
         // Auto-load saved state on page load
         window.addEventListener('load', function() {
             loadState();
             loadActivities();
+            // Display activities if they exist (even without school schedule)
+            if (activities.length > 0) {
+                displaySchedule();
+                displayActivities();
+            }
         });
     </script>
 </body>

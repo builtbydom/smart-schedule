@@ -7,7 +7,7 @@ A simple tool to convert messy school schedule data into organized, color-coded 
 ## 🚀 Quick Start
 
 ### **Option 1: Use Online (Recommended)**
-**[🌐 Launch Smart School Schedule](https://builtbydom.github.io/smart-schedule/start.html)** - No download needed!
+**[🌐 Launch Smart School Schedule](https://builtbydom.github.io/smart-schedule/)** - No download needed!
 
 1. **Click the link above** to open the app in your browser
 2. **Copy your schedule** from your school's website and paste it in

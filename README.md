@@ -17,7 +17,7 @@ A simple tool to convert messy school schedule data into organized, color-coded 
 **[📥 Download this project to your PC](https://github.com/builtbydom/smart-schedule/archive/refs/heads/main.zip)**
 
 1. **Extract the ZIP file** to your Desktop
-2. **Double-click `start.html`** to open the app
+2. **Double-click `index.html`** to open the app
 3. **Copy your schedule** from your school's website and paste it in
 4. **Click "Create Schedule Table"** - Done! 🎉
 

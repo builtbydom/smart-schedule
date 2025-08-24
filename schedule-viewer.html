@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart School Schedule - Easy Schedule Reading</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/svg+xml" sizes="16x16" href="favicon-16.svg">
+    <link rel="shortcut icon" href="favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            font-weight: 400;
+        }
+
+        .header p {
+            font-size: 0.95em;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .control-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #007bff;
+        }
+
+        .control-section h2 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.2em;
+        }
+
+        .control-section p {
+            color: #666;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            font-size: 0.9em;
+        }
+
+        .schedule-loaded-section {
+            background: #e8f5e8;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #28a745;
+        }
+
+        .schedule-loaded-section h2 {
+            color: #155724;
+            margin-bottom: 8px;
+            font-size: 1.2em;
+        }
+
+        .schedule-loaded-section p {
+            color: #155724;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            font-size: 0.9em;
+        }
+
+        .schedule-info {
+            background: white;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .schedule-info h3 {
+            color: #155724;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .schedule-info p {
+            color: #155724;
+            margin: 3px 0;
+            font-size: 0.85em;
+        }
+
+        .schedule-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 6px 10px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .stat-number {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #28a745;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 11px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .button-group {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .print-btn {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+
+        .schedule-container {
+            margin-top: 15px;
+            overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: white;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .schedule-table th {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 18px 12px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border-bottom: 3px solid #1a252f;
+        }
+
+        .schedule-table td {
+            padding: 16px 12px;
+            text-align: center;
+            border-bottom: 1px solid #e8ecf0;
+            border-right: 1px solid #e8ecf0;
+            vertical-align: top;
+            font-size: 13px;
+            line-height: 1.5;
+            transition: background-color 0.2s ease;
+        }
+
+        .schedule-table td:hover {
+            background-color: #f8f9fb;
+        }
+
+        .time-column {
+            background: linear-gradient(135deg, #ecf0f1 0%, #d5dbdb 100%);
+            font-weight: 700;
+            color: #2c3e50;
+            white-space: nowrap;
+            min-width: 130px;
+            border-right: 2px solid #bdc3c7;
+            font-size: 14px;
+        }
+
+        .class-cell {
+            min-width: 160px;
+            position: relative;
+        }
+
+        .class-name {
+            font-weight: 700;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #2c3e50;
+            line-height: 1.3;
+        }
+
+        .teacher-name {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-bottom: 3px;
+            font-weight: 500;
+        }
+
+        .room-name {
+            color: #2c3e50;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px 6px;
+            border-radius: 10px;
+            display: inline-block;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Subject color coding - Unique distinct colors */
+        .math { background-color: #ffe6e6; border-left: 4px solid #e74c3c; }          /* Red */
+        .science { background-color: #e6f3ff; border-left: 4px solid #3498db; }       /* Blue */
+        .language-arts { background-color: #f0e6ff; border-left: 4px solid #9b59b6; } /* Purple */
+        .social-studies { background-color: #e6ffe6; border-left: 4px solid #27ae60; }/* Green */
+        .spanish { background-color: #fff3e6; border-left: 4px solid #f39c12; }       /* Orange */
+        .family-consumer { background-color: #ffe6f7; border-left: 4px solid #e91e63; }/* Pink */
+        .band { background-color: #e6f7ff; border-left: 4px solid #00bcd4; }          /* Cyan */
+        .pe { background-color: #f6ffe6; border-left: 4px solid #8bc34a; }            /* Lime Green */
+        .flex { background-color: #f5f5f5; border-left: 4px solid #607d8b; }          /* Blue Grey */
+        .homeroom { background-color: #fff7e6; border-left: 4px solid #ff9800; }      /* Amber */
+        .lunch { background-color: #ffeaa7; border-left: 4px solid #fdcb6e; }         /* Yellow */
+        .unknown { background-color: #f8f9fa; border-left: 4px solid #6c757d; }        /* Light Grey - Unknown Subjects */
+
+        .student-info {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 18px 25px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            text-align: center;
+            box-shadow: 0 3px 12px rgba(44, 62, 80, 0.3);
+            border: 1px solid #34495e;
+        }
+
+        .student-info h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        .student-info p {
+            font-size: 14px;
+            opacity: 0.95;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .legend {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .legend h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #f44336;
+        }
+
+        .success-message {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .filter-inline {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .filter-inline label {
+            font-size: 0.9em;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .filter-inline select {
+            padding: 6px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 13px;
+            background: white;
+            min-width: 150px;
+            transition: border-color 0.3s;
+        }
+
+        .filter-inline select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .filter-inline button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .filtered-highlight {
+            background: #fff3cd !important;
+            border: 2px solid #f0ad4e !important;
+            box-shadow: 0 0 10px rgba(240, 173, 78, 0.3) !important;
+        }
+
+        .filtered-dim {
+            opacity: 0.3 !important;
+        }
+
+        .schedule-type {
+            font-size: 11px;
+            font-weight: bold;
+            color: #666;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .schedule-a-row {
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .schedule-b-row {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .schedule-b-row .time-column {
+            border-top: 1px solid #ddd;
+            padding-top: 8px;
+        }
+
+        .schedule-merged-row {
+            border-top: 2px solid #e0e0e0;
+            border-bottom: 2px solid #e0e0e0;
+            background-color: #f8f9fa;
+        }
+
+        .schedule-merged-row .time-column {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+
+        .schedule-merged-row .schedule-type {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                font-family: 'Segoe UI', Arial, sans-serif !important;
+                font-size: 11px !important;
+                line-height: 1.3 !important;
+            }
+            
+            .container {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                max-width: none !important;
+                width: 100% !important;
+                height: 100vh !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            
+            .header {
+                display: none !important;
+            }
+            
+            .content {
+                padding: 0 !important;
+                flex: 1 !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            
+            .control-section,
+            .button-group,
+            .filter-inline,
+            #messageArea {
+                display: none !important;
+            }
+            
+            .student-info {
+                background: #2c3e50 !important;
+                color: white !important;
+                border: 3px solid #2c3e50 !important;
+                padding: 15px 20px !important;
+                margin: 0 0 15px 0 !important;
+                text-align: center !important;
+                border-radius: 0 !important;
+                page-break-inside: avoid !important;
+                box-shadow: none !important;
+            }
+
+            .student-info h2 {
+                font-size: 22px !important;
+                font-weight: 700 !important;
+                margin: 0 0 5px 0 !important;
+                color: white !important;
+            }
+
+            .student-info p {
+                font-size: 14px !important;
+                margin: 0 !important;
+                color: white !important;
+                font-weight: 500 !important;
+            }
+            
+            .schedule-container {
+                margin: 0 !important;
+                overflow: visible !important;
+                flex: 1 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+            
+            .schedule-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                border: 2px solid #2c3e50 !important;
+                height: 100% !important;
+                font-size: 10px !important;
+                font-family: 'Segoe UI', Arial, sans-serif !important;
+            }
+            
+            .schedule-table th {
+                background: #2c3e50 !important;
+                color: white !important;
+                border: 1px solid #2c3e50 !important;
+                padding: 8px 6px !important;
+                font-weight: 700 !important;
+                font-size: 11px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.5px !important;
+                page-break-inside: avoid !important;
+                page-break-after: avoid !important;
+            }
+            
+            .schedule-table td {
+                border: 1px solid #34495e !important;
+                padding: 6px 4px !important;
+                font-size: 9px !important;
+                line-height: 1.2 !important;
+                page-break-inside: avoid !important;
+                vertical-align: top !important;
+            }
+            
+            .time-column {
+                background: #ecf0f1 !important;
+                font-weight: 700 !important;
+                width: 100px !important;
+                color: #2c3e50 !important;
+                font-size: 10px !important;
+                border-right: 2px solid #2c3e50 !important;
+            }
+            
+            .class-cell {
+                width: auto !important;
+                min-width: 120px !important;
+            }
+            
+            .class-name {
+                font-weight: 700 !important;
+                font-size: 10px !important;
+                margin-bottom: 3px !important;
+                color: #2c3e50 !important;
+                line-height: 1.2 !important;
+            }
+            
+            .teacher-name {
+                font-size: 8px !important;
+                margin-bottom: 2px !important;
+                color: #7f8c8d !important;
+                font-weight: 500 !important;
+            }
+            
+            .room-name {
+                font-size: 8px !important;
+                color: #2c3e50 !important;
+                background: rgba(255, 255, 255, 0.95) !important;
+                padding: 1px 4px !important;
+                border-radius: 3px !important;
+                border: 1px solid rgba(0, 0, 0, 0.15) !important;
+                font-weight: 600 !important;
+            }
+            
+            /* Enhanced subject color coding for print */
+            .math { background-color: #ffe6e6 !important; border-left: 4px solid #e74c3c !important; }
+            .science { background-color: #e6f3ff !important; border-left: 4px solid #3498db !important; }
+            .language-arts { background-color: #f0e6ff !important; border-left: 4px solid #9b59b6 !important; }
+            .social-studies { background-color: #e6ffe6 !important; border-left: 4px solid #27ae60 !important; }
+            .spanish { background-color: #fff3e6 !important; border-left: 4px solid #f39c12 !important; }
+            .family-consumer { background-color: #ffe6f7 !important; border-left: 4px solid #e91e63 !important; }
+            .band { background-color: #e6f7ff !important; border-left: 4px solid #00bcd4 !important; }
+            .pe { background-color: #f6ffe6 !important; border-left: 4px solid #8bc34a !important; }
+            .flex { background-color: #f5f5f5 !important; border-left: 4px solid #607d8b !important; }
+            .homeroom { background-color: #fff7e6 !important; border-left: 4px solid #ff9800 !important; }
+            .lunch { background-color: #ffeaa7 !important; border-left: 4px solid #fdcb6e !important; }
+            .unknown { background-color: #f8f9fa !important; border-left: 4px solid #6c757d !important; }
+            
+            .schedule-type {
+                font-size: 8px !important;
+                font-weight: 700 !important;
+                color: #2c3e50 !important;
+                display: block !important;
+                margin-top: 2px !important;
+            }
+
+            .schedule-a-row {
+                border-top: 1px solid #34495e !important;
+            }
+
+            .schedule-b-row {
+                border-bottom: 1px solid #34495e !important;
+            }
+
+            .schedule-merged-row {
+                border-top: 2px solid #2c3e50 !important;
+                border-bottom: 2px solid #2c3e50 !important;
+                background-color: #ecf0f1 !important;
+            }
+
+            .schedule-merged-row .time-column {
+                background-color: #d5dbdb !important;
+                font-weight: 700 !important;
+            }
+
+            .schedule-merged-row .schedule-type {
+                color: #27ae60 !important;
+                font-weight: 700 !important;
+            }
+
+            /* Ensure content fills the page */
+            .schedule-table tr {
+                page-break-inside: avoid !important;
+            }
+            
+            /* Print-optimized legend */
+            .legend {
+                display: block !important;
+                margin-top: 15px !important;
+                padding: 10px !important;
+                background: white !important;
+                border: 1px solid #2c3e50 !important;
+                border-radius: 0 !important;
+                page-break-inside: avoid !important;
+            }
+
+            .legend h3 {
+                color: #2c3e50 !important;
+                margin-bottom: 8px !important;
+                font-size: 12px !important;
+                font-weight: 700 !important;
+                text-align: center !important;
+            }
+
+            .legend-grid {
+                display: grid !important;
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 4px !important;
+                font-size: 8px !important;
+            }
+
+            .legend-item {
+                display: flex !important;
+                align-items: center !important;
+                padding: 3px 6px !important;
+                border-radius: 3px !important;
+                font-size: 8px !important;
+                font-weight: 500 !important;
+                border: 1px solid #ddd !important;
+            }
+
+            /* Print legend colors - same as schedule colors */
+            .legend .math { background-color: #ffe6e6 !important; border-left: 3px solid #e74c3c !important; }
+            .legend .science { background-color: #e6f3ff !important; border-left: 3px solid #3498db !important; }
+            .legend .language-arts { background-color: #f0e6ff !important; border-left: 3px solid #9b59b6 !important; }
+            .legend .social-studies { background-color: #e6ffe6 !important; border-left: 3px solid #27ae60 !important; }
+            .legend .spanish { background-color: #fff3e6 !important; border-left: 3px solid #f39c12 !important; }
+            .legend .family-consumer { background-color: #ffe6f7 !important; border-left: 3px solid #e91e63 !important; }
+            .legend .band { background-color: #e6f7ff !important; border-left: 3px solid #00bcd4 !important; }
+            .legend .pe { background-color: #f6ffe6 !important; border-left: 3px solid #8bc34a !important; }
+            .legend .flex { background-color: #f5f5f5 !important; border-left: 3px solid #607d8b !important; }
+            .legend .homeroom { background-color: #fff7e6 !important; border-left: 3px solid #ff9800 !important; }
+            .legend .lunch { background-color: #ffeaa7 !important; border-left: 3px solid #fdcb6e !important; }
+            .legend .unknown { background-color: #f8f9fa !important; border-left: 3px solid #6c757d !important; }
+
+            /* Optimize page usage */
+            @page {
+                margin: 0.4in 0.3in !important;
+                size: letter !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .button-group {
+                justify-content: center;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .button-group button {
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+            
+            .schedule-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .schedule-table {
+                font-size: 11px;
+                min-width: 600px;
+            }
+            
+            .schedule-table th,
+            .schedule-table td {
+                padding: 10px 6px;
+            }
+
+            .class-name {
+                font-size: 12px !important;
+            }
+
+            .teacher-name {
+                font-size: 10px !important;
+            }
+
+            .room-name {
+                font-size: 9px !important;
+            }
+
+            .student-info h2 {
+                font-size: 24px !important;
+            }
+
+            .student-info p {
+                font-size: 14px !important;
+            }
+
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-controls select {
+                min-width: auto;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Smart School Schedule</h1>
+            <p>Transform messy school schedules into beautiful, easy-to-read tables</p>
+        </div>
+        
+        <div class="content">
+            <div class="control-section" id="importSection">
+                <h2>📋 Import Your Schedule</h2>
+                <p>Copy and paste your child's schedule from Infinite Campus below.</p>
+                
+                <textarea id="scheduleInput" placeholder="Paste your Infinite Campus schedule here..."></textarea>
+                
+                <div class="button-group">
+                    <button onclick="parseSchedule()">📊 Create Schedule Table</button>
+                    <button onclick="loadSampleData()">📝 Load Sample Data</button>
+                    <button class="print-btn" onclick="printSchedule()" id="printBtn" style="display: none;">🖨️ Print</button>
+                    <button class="clear-btn" onclick="clearAll()">🗑️ Clear</button>
+                </div>
+            </div>
+
+            <div class="control-section" id="scheduleLoadedSection" style="display: none;">
+                <h2>📋 Schedule Ready</h2>
+                <p>Your schedule is loaded! Print it, filter by subject, or upload a new one.</p>
+                
+                <div class="button-group">
+                    <button class="print-btn" onclick="printSchedule()">🖨️ Print Schedule</button>
+                    <button onclick="showImportSection()">📝 Upload New</button>
+                    <button class="clear-btn" onclick="clearAll()">🗑️ Clear All</button>
+                </div>
+                
+                <div class="filter-inline" id="filterInline" style="display: none;">
+                    <label>Filter:</label>
+                    <select id="subjectFilter" onchange="applyFilter()">
+                        <option value="">Show All Subjects</option>
+                    </select>
+                    <button onclick="clearFilter()" class="clear-btn">Clear</button>
+                </div>
+                
+                <div class="schedule-info" id="scheduleInfo">
+                    <!-- Schedule info will be populated here -->
+                </div>
+            </div>
+
+            <div id="messageArea"></div>
+            <div id="scheduleDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        let scheduleData = {};
+        let studentInfo = {};
+
+        function parseTime(timeStr) {
+            // Convert time string like "8:10 AM" or "1:53 PM" to minutes since midnight
+            const [time, period] = timeStr.trim().split(' ');
+            const [hours, minutes] = time.split(':').map(Number);
+            
+            let hour24 = hours;
+            if (period.toUpperCase() === 'PM' && hours !== 12) {
+                hour24 += 12;
+            } else if (period.toUpperCase() === 'AM' && hours === 12) {
+                hour24 = 0;
+            }
+            
+            return hour24 * 60 + minutes;
+        }
+
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('messageArea');
+            const className = type === 'error' ? 'error-message' : 'success-message';
+            messageArea.innerHTML = `<div class="${className}">${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        function getSubjectClass(subject) {
+            const subjectLower = subject.toLowerCase();
+            
+            // Core subjects
+            if (subjectLower.includes('math') || subjectLower.includes('algebra') || subjectLower.includes('geometry') || subjectLower.includes('calculus')) return 'math';
+            if (subjectLower.includes('science') && !subjectLower.includes('family') && !subjectLower.includes('consumer')) return 'science';
+            if (subjectLower.includes('biology') || subjectLower.includes('chemistry') || subjectLower.includes('physics')) return 'science';
+            if (subjectLower.includes('language arts') || subjectLower.includes('english') || subjectLower.includes('reading') || subjectLower.includes('writing')) return 'language-arts';
+            if (subjectLower.includes('social studies') || subjectLower.includes('history') || subjectLower.includes('geography') || subjectLower.includes('civics')) return 'social-studies';
+            
+            // World languages
+            if (subjectLower.includes('spanish') || subjectLower.includes('french') || subjectLower.includes('german') || subjectLower.includes('italian') || subjectLower.includes('chinese') || subjectLower.includes('japanese')) return 'spanish';
+            
+            // Electives and specials
+            if (subjectLower.includes('family') || subjectLower.includes('consumer') || subjectLower.includes('art') || subjectLower.includes('drama') || subjectLower.includes('theater')) return 'family-consumer';
+            if (subjectLower.includes('band') || subjectLower.includes('orchestra') || subjectLower.includes('choir') || subjectLower.includes('music')) return 'band';
+            if (subjectLower.includes('pe') || subjectLower.includes('gym') || subjectLower.includes('physical education') || subjectLower.includes('health')) return 'pe';
+            
+            // School-specific
+            if (subjectLower.includes('flex') || subjectLower.includes('study hall') || subjectLower.includes('advisory')) return 'flex';
+            if (subjectLower.includes('homeroom') || subjectLower.includes('hr')) return 'homeroom';
+            if (subjectLower.includes('lunch') || subjectLower.includes('breakfast')) return 'lunch';
+            
+            // Return 'unknown' for any unrecognized subjects
+            return 'unknown';
+        }
+
+        // State management functions
+        function saveState() {
+            const state = {
+                scheduleData: scheduleData,
+                studentInfo: studentInfo,
+                inputData: document.getElementById('scheduleInput').value,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('scheduleViewerState', JSON.stringify(state));
+        }
+
+        function loadState() {
+            try {
+                const savedState = localStorage.getItem('scheduleViewerState');
+                if (savedState) {
+                    const state = JSON.parse(savedState);
+                    scheduleData = state.scheduleData || {};
+                    studentInfo = state.studentInfo || {};
+                    
+                    if (state.inputData) {
+                        document.getElementById('scheduleInput').value = state.inputData;
+                    }
+                    
+                    if (Object.keys(scheduleData).length > 0) {
+                        displaySchedule();
+                        populateSubjectFilter();
+                        showScheduleLoadedState();
+                        showMessage('Previously saved schedule loaded! 📋', 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading saved state:', error);
+            }
+        }
+
+        function parseSchedule() {
+            const input = document.getElementById('scheduleInput').value.trim();
+            
+            if (!input) {
+                showMessage('Please paste your schedule data first.', 'error');
+                return;
+            }
+
+            try {
+                const lines = input.split('\n').map(line => line.trim()).filter(line => line);
+                scheduleData = {};
+                studentInfo = {};
+                
+                let currentDay = '';
+                let currentPeriod = null;
+                let i = 0;
+
+                // Parse student info
+                while (i < lines.length) {
+                    const line = lines[i];
+                    if (line.startsWith('Selected student:')) {
+                        studentInfo.name = line.replace('Selected student:', '').trim();
+                    } else if (line.match(/^\d{2}-\d{2}/)) {
+                        studentInfo.school = line;
+                    } else if (line.startsWith('Day:')) {
+                        break;
+                    }
+                    i++;
+                }
+
+                // Parse schedule data
+                while (i < lines.length) {
+                    const line = lines[i];
+                    
+                    if (line.startsWith('Day:')) {
+                        currentDay = line.replace('Day:', '').trim();
+                        scheduleData[currentDay] = [];
+                    } else if (line.startsWith('Period')) {
+                        currentPeriod = {
+                            period: line,
+                            subject: '',
+                            time: '',
+                            teacher: '',
+                            room: ''
+                        };
+                        
+                        // Get subject (next line)
+                        if (i + 1 < lines.length) {
+                            i++;
+                            currentPeriod.subject = lines[i];
+                        }
+                        
+                        // Get time (next line)
+                        if (i + 1 < lines.length) {
+                            i++;
+                            currentPeriod.time = lines[i];
+                        }
+                        
+                        // Get teacher and room
+                        while (i + 1 < lines.length) {
+                            i++;
+                            const nextLine = lines[i];
+                            if (nextLine.startsWith('Teacher:')) {
+                                currentPeriod.teacher = nextLine.replace('Teacher:', '').trim();
+                            } else if (nextLine.startsWith('Room:')) {
+                                currentPeriod.room = nextLine.replace('Room:', '').trim();
+                                break;
+                            } else if (nextLine.startsWith('Day:') || nextLine.startsWith('Period')) {
+                                i--;
+                                break;
+                            }
+                        }
+                        
+                        if (currentDay && currentPeriod) {
+                            scheduleData[currentDay].push(currentPeriod);
+                        }
+                    }
+                    i++;
+                }
+
+                displaySchedule();
+                saveState(); // Save the schedule data
+                populateSubjectFilter(); // Populate the filter dropdown
+                showScheduleLoadedState(); // Switch to loaded state
+                showMessage('Schedule imported successfully! 🎉');
+                
+            } catch (error) {
+                console.error('Parse error:', error);
+                showMessage('Error parsing schedule. Please check the format and try again.', 'error');
+            }
+        }
+
+        function displaySchedule() {
+            const displayArea = document.getElementById('scheduleDisplay');
+            
+            if (Object.keys(scheduleData).length === 0) {
+                displayArea.innerHTML = '';
+                return;
+            }
+
+            // Create student info section
+            let html = '';
+            if (studentInfo.name || studentInfo.school) {
+                html += `
+                    <div class="student-info">
+                        <h2>👨‍🎓 ${studentInfo.name || 'Student Schedule'}</h2>
+                        <p>${studentInfo.school || ''}</p>
+                    </div>
+                `;
+            }
+
+            // Group days by base name (Mon, Tues, Weds, etc.) and schedule type (A or B)
+            const groupedDays = {};
+            Object.keys(scheduleData).forEach(dayKey => {
+                const match = dayKey.match(/^(.*?)\.\s*([AB])$/);
+                if (match) {
+                    const [, dayName, scheduleType] = match;
+                    if (!groupedDays[dayName]) {
+                        groupedDays[dayName] = {};
+                    }
+                    groupedDays[dayName][scheduleType] = scheduleData[dayKey];
+                }
+            });
+
+            // Get all unique times across all days
+            const allTimes = new Set();
+            Object.values(scheduleData).forEach(daySchedule => {
+                daySchedule.forEach(period => {
+                    if (period.time && period.time.includes('-')) {
+                        allTimes.add(period.time);
+                    }
+                });
+            });
+
+            const sortedTimes = Array.from(allTimes).sort((a, b) => {
+                const timeA = a.split(' - ')[0];
+                const timeB = b.split(' - ')[0];
+                return parseTime(timeA) - parseTime(timeB);
+            });
+
+            // Create table
+            html += '<div class="schedule-container">';
+            html += '<table class="schedule-table">';
+            
+            // Header row
+            html += '<tr><th class="time-column">Time</th>';
+            Object.keys(groupedDays).forEach(dayName => {
+                html += `<th>${dayName}</th>`;
+            });
+            html += '</tr>';
+
+            // Data rows
+            sortedTimes.forEach(time => {
+                // Check if A and B schedules are identical for this time across all days
+                let allDaysIdentical = true;
+                const dayComparisons = {};
+                
+                Object.keys(groupedDays).forEach(dayName => {
+                    const dayData = groupedDays[dayName];
+                    const aPeriod = dayData.A ? dayData.A.find(p => p.time === time) : null;
+                    const bPeriod = dayData.B ? dayData.B.find(p => p.time === time) : null;
+                    
+                    // Compare periods (consider null/undefined as empty)
+                    const aSubject = aPeriod ? aPeriod.subject : '';
+                    const aTeacher = aPeriod ? aPeriod.teacher : '';
+                    const aRoom = aPeriod ? aPeriod.room : '';
+                    
+                    const bSubject = bPeriod ? bPeriod.subject : '';
+                    const bTeacher = bPeriod ? bPeriod.teacher : '';
+                    const bRoom = bPeriod ? bPeriod.room : '';
+                    
+                    const identical = (aSubject === bSubject && aTeacher === bTeacher && aRoom === bRoom);
+                    dayComparisons[dayName] = { identical, aPeriod, bPeriod };
+                    
+                    if (!identical) {
+                        allDaysIdentical = false;
+                    }
+                });
+
+                if (allDaysIdentical) {
+                    // Single merged row when A and B are identical
+                    html += '<tr class="schedule-merged-row">';
+                    html += `<td class="time-column">${time}<br><span class="schedule-type">A & B</span></td>`;
+                    
+                    Object.keys(groupedDays).forEach(dayName => {
+                        const comparison = dayComparisons[dayName];
+                        const period = comparison.aPeriod || comparison.bPeriod; // Use whichever exists
+                        
+                        if (period) {
+                            const subjectClass = getSubjectClass(period.subject);
+                            html += `<td class="class-cell ${subjectClass}">
+                                <div class="class-name">${period.subject}</div>
+                                <div class="teacher-name">${period.teacher}</div>
+                                <div class="room-name">${period.room}</div>
+                            </td>`;
+                        } else {
+                            html += '<td class="class-cell">-</td>';
+                        }
+                    });
+                    html += '</tr>';
+                } else {
+                    // Separate A and B rows when they differ
+                    // A Schedule row
+                    html += '<tr class="schedule-a-row">';
+                    html += `<td class="time-column">${time}<br><span class="schedule-type">A</span></td>`;
+                    
+                    Object.keys(groupedDays).forEach(dayName => {
+                        const comparison = dayComparisons[dayName];
+                        const aPeriod = comparison.aPeriod;
+                        
+                        if (aPeriod) {
+                            const subjectClass = getSubjectClass(aPeriod.subject);
+                            html += `<td class="class-cell ${subjectClass}">
+                                <div class="class-name">${aPeriod.subject}</div>
+                                <div class="teacher-name">${aPeriod.teacher}</div>
+                                <div class="room-name">${aPeriod.room}</div>
+                            </td>`;
+                        } else {
+                            html += '<td class="class-cell">-</td>';
+                        }
+                    });
+                    html += '</tr>';
+
+                    // B Schedule row
+                    html += '<tr class="schedule-b-row">';
+                    html += `<td class="time-column"><span class="schedule-type">B</span></td>`;
+                    
+                    Object.keys(groupedDays).forEach(dayName => {
+                        const comparison = dayComparisons[dayName];
+                        const bPeriod = comparison.bPeriod;
+                        
+                        if (bPeriod) {
+                            const subjectClass = getSubjectClass(bPeriod.subject);
+                            html += `<td class="class-cell ${subjectClass}">
+                                <div class="class-name">${bPeriod.subject}</div>
+                                <div class="teacher-name">${bPeriod.teacher}</div>
+                                <div class="room-name">${bPeriod.room}</div>
+                            </td>`;
+                        } else {
+                            html += '<td class="class-cell">-</td>';
+                        }
+                    });
+                    html += '</tr>';
+                }
+            });
+
+            html += '</table>';
+            html += '</div>';
+
+            // Add legend
+            html += `
+                <div class="legend">
+                    <h3>🎨 Color Legend</h3>
+                    <div class="legend-grid">
+                        <div class="legend-item math">📐 Math</div>
+                        <div class="legend-item science">🔬 Science</div>
+                        <div class="legend-item language-arts">📖 Language Arts</div>
+                        <div class="legend-item social-studies">🌍 Social Studies</div>
+                        <div class="legend-item spanish">🇫🇷 French</div>
+                        <div class="legend-item family-consumer">🏠 Family & Consumer Science</div>
+                        <div class="legend-item band">🎵 Band</div>
+                        <div class="legend-item pe">⚽ Physical Education</div>
+                        <div class="legend-item flex">📚 FLEX</div>
+                        <div class="legend-item homeroom">🏫 Homeroom</div>
+                        <div class="legend-item lunch">🍽️ Lunch</div>
+                        <div class="legend-item unknown">❓ Other Subjects</div>
+                    </div>
+                </div>
+            `;
+
+            displayArea.innerHTML = html;
+        }
+
+        function loadSampleData() {
+            const sampleData = `Schedule
+Selected student: Emma Johnson
+24-25 Riverside Middle School
+Enrollment
+24-25 Riverside Middle School
+Term 1(08/28/2024 - 10/03/2024)
+Day: Mon. A
+Period HR
+Homeroom 6
+8:10 AM - 8:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 08:23
+Math 6
+8:23 AM - 9:20 AM
+Teacher: MITCHELL
+Room: B128
+Period 09:23
+Social Studies 6
+9:23 AM - 10:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 10:23
+Lunch 6
+10:23 AM - 10:50 AM
+Room: CAFE
+Period 10:53
+French 1A
+10:53 AM - 11:20 AM
+Teacher: GARCIA
+Room: B125
+Period 11:23
+French 1A
+11:23 AM - 11:50 AM
+Teacher: GARCIA
+Room: B125
+Period 11:53
+Family & Consumer Science 6
+11:53 AM - 12:20 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:23
+Family & Consumer Science 6
+12:23 PM - 12:50 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:53
+Band 6 5x
+12:53 PM - 1:50 PM
+Teacher: Wilson, David
+Room: C156
+Period 01:53
+Science 6
+1:53 PM - 2:50 PM
+Teacher: PATEL
+Room: B131
+Day: Tues. A
+Period HR
+Homeroom 6
+8:10 AM - 8:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 08:23
+Language Arts 6
+8:23 AM - 9:20 AM
+Teacher: RODRIGUEZ
+Room: B121
+Period 09:23
+French 1A
+9:23 AM - 10:20 AM
+Teacher: GARCIA
+Room: B125
+Period 10:23
+Lunch 6
+10:23 AM - 10:50 AM
+Room: CAFE
+Period 10:53
+FLEX 6
+10:53 AM - 11:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:23
+FLEX 6
+11:23 AM - 11:50 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:53
+Family & Consumer Science 6
+11:53 AM - 12:20 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:23
+Family & Consumer Science 6
+12:23 PM - 12:50 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:53
+Band 6 5x
+12:53 PM - 1:50 PM
+Teacher: Wilson, David
+Room: C156
+Period 01:53
+Science 6
+1:53 PM - 2:50 PM
+Teacher: PATEL
+Room: B131
+Day: Weds. A
+Period HR
+Homeroom 6
+8:10 AM - 8:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 08:23
+Language Arts 6
+8:23 AM - 9:20 AM
+Teacher: RODRIGUEZ
+Room: B121
+Period 09:23
+Math 6
+9:23 AM - 10:20 AM
+Teacher: MITCHELL
+Room: B128
+Period 10:23
+Lunch 6
+10:23 AM - 10:50 AM
+Room: CAFE
+Period 10:53
+Social Studies 6
+10:53 AM - 11:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:23
+Social Studies 6
+11:23 AM - 11:50 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:53
+Family & Consumer Science 6
+11:53 AM - 12:20 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:23
+Family & Consumer Science 6
+12:23 PM - 12:50 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:53
+PE 6
+12:53 PM - 1:50 PM
+Teacher: CLARK, J.
+Room: Gym
+Period 01:53
+Science 6
+1:53 PM - 2:50 PM
+Teacher: PATEL
+Room: B131
+Day: Thurs. A
+Period HR
+Homeroom 6
+8:10 AM - 8:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 08:23
+Language Arts 6
+8:23 AM - 9:20 AM
+Teacher: RODRIGUEZ
+Room: B121
+Period 09:23
+Math 6
+9:23 AM - 10:20 AM
+Teacher: MITCHELL
+Room: B128
+Period 10:23
+Lunch 6
+10:23 AM - 10:50 AM
+Room: CAFE
+Period 10:53
+Social Studies 6
+10:53 AM - 11:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:23
+Social Studies 6
+11:23 AM - 11:50 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:53
+French 1A
+11:53 AM - 12:20 PM
+Teacher: GARCIA
+Room: B125
+Period 12:23
+French 1A
+12:23 PM - 12:50 PM
+Teacher: GARCIA
+Room: B125
+Period 12:53
+PE 6
+12:53 PM - 1:50 PM
+Teacher: CLARK, J.
+Room: Gym
+Period 01:53
+Science 6
+1:53 PM - 2:50 PM
+Teacher: PATEL
+Room: B131
+Day: Fri. A
+Period HR
+Homeroom 6
+8:10 AM - 8:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 08:23
+Language Arts 6
+8:23 AM - 9:20 AM
+Teacher: RODRIGUEZ
+Room: B121
+Period 09:23
+FLEX 6
+9:23 AM - 10:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 10:23
+Lunch 6
+10:23 AM - 10:50 AM
+Room: CAFE
+Period 10:53
+Math 6
+10:53 AM - 11:20 AM
+Teacher: MITCHELL
+Room: B128
+Period 11:23
+Math 6
+11:23 AM - 11:50 AM
+Teacher: MITCHELL
+Room: B128
+Period 11:53
+Social Studies 6
+11:53 AM - 12:20 PM
+Teacher: ANDERSON
+Room: B130
+Period 12:23
+Social Studies 6
+12:23 PM - 12:50 PM
+Teacher: ANDERSON
+Room: B130
+Period 12:53
+French 1A
+12:53 PM - 1:50 PM
+Teacher: GARCIA
+Room: B125
+Period 01:53
+Family & Consumer Science 6
+1:53 PM - 2:50 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Day: Mon. B
+Period HR
+Homeroom 6
+8:10 AM - 8:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 08:23
+Math 6
+8:23 AM - 9:20 AM
+Teacher: MITCHELL
+Room: B128
+Period 09:23
+Social Studies 6
+9:23 AM - 10:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 10:23
+Lunch 6
+10:23 AM - 10:50 AM
+Room: CAFE
+Period 10:53
+French 1A
+10:53 AM - 11:20 AM
+Teacher: GARCIA
+Room: B125
+Period 11:23
+French 1A
+11:23 AM - 11:50 AM
+Teacher: GARCIA
+Room: B125
+Period 11:53
+Family & Consumer Science 6
+11:53 AM - 12:20 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:23
+Family & Consumer Science 6
+12:23 PM - 12:50 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:53
+Band 6 5x
+12:53 PM - 1:50 PM
+Teacher: Wilson, David
+Room: C156
+Period 01:53
+Science 6
+1:53 PM - 2:50 PM
+Teacher: PATEL
+Room: B131
+Day: Tues. B
+Period HR
+Homeroom 6
+8:10 AM - 8:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 08:23
+Language Arts 6
+8:23 AM - 9:20 AM
+Teacher: RODRIGUEZ
+Room: B121
+Period 09:23
+French 1A
+9:23 AM - 10:20 AM
+Teacher: GARCIA
+Room: B125
+Period 10:23
+Lunch 6
+10:23 AM - 10:50 AM
+Room: CAFE
+Period 10:53
+FLEX 6
+10:53 AM - 11:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:23
+FLEX 6
+11:23 AM - 11:50 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:53
+Family & Consumer Science 6
+11:53 AM - 12:20 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:23
+Family & Consumer Science 6
+12:23 PM - 12:50 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:53
+Band 6 5x
+12:53 PM - 1:50 PM
+Teacher: Wilson, David
+Room: C156
+Period 01:53
+Science 6
+1:53 PM - 2:50 PM
+Teacher: PATEL
+Room: B131
+Day: Weds. B
+Period HR
+Homeroom 6
+8:10 AM - 8:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 08:23
+Language Arts 6
+8:23 AM - 9:20 AM
+Teacher: RODRIGUEZ
+Room: B121
+Period 09:23
+Math 6
+9:23 AM - 10:20 AM
+Teacher: MITCHELL
+Room: B128
+Period 10:23
+Lunch 6
+10:23 AM - 10:50 AM
+Room: CAFE
+Period 10:53
+Social Studies 6
+10:53 AM - 11:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:23
+Social Studies 6
+11:23 AM - 11:50 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:53
+Family & Consumer Science 6
+11:53 AM - 12:20 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:23
+Family & Consumer Science 6
+12:23 PM - 12:50 PM
+Teacher: THOMPSON, Sarah
+Room: B112
+Period 12:53
+PE 6
+12:53 PM - 1:50 PM
+Teacher: CLARK, J.
+Room: Gym
+Period 01:53
+Science 6
+1:53 PM - 2:50 PM
+Teacher: PATEL
+Room: B131
+Day: Thurs. B
+Period HR
+Homeroom 6
+8:10 AM - 8:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 08:23
+Language Arts 6
+8:23 AM - 9:20 AM
+Teacher: RODRIGUEZ
+Room: B121
+Period 09:23
+Math 6
+9:23 AM - 10:20 AM
+Teacher: MITCHELL
+Room: B128
+Period 10:23
+Lunch 6
+10:23 AM - 10:50 AM
+Room: CAFE
+Period 10:53
+Social Studies 6
+10:53 AM - 11:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:23
+Social Studies 6
+11:23 AM - 11:50 AM
+Teacher: ANDERSON
+Room: B130
+Period 11:53
+French 1A
+11:53 AM - 12:20 PM
+Teacher: GARCIA
+Room: B125
+Period 12:23
+French 1A
+12:23 PM - 12:50 PM
+Teacher: GARCIA
+Room: B125
+Period 12:53
+Band 6 5x
+12:53 PM - 1:50 PM
+Teacher: Wilson, David
+Room: C156
+Period 01:53
+Science 6
+1:53 PM - 2:50 PM
+Teacher: PATEL
+Room: B131
+Day: Fri. B
+Period HR
+Homeroom 6
+8:10 AM - 8:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 08:23
+Language Arts 6
+8:23 AM - 9:20 AM
+Teacher: RODRIGUEZ
+Room: B121
+Period 09:23
+FLEX 6
+9:23 AM - 10:20 AM
+Teacher: ANDERSON
+Room: B130
+Period 10:23
+Lunch 6
+10:23 AM - 10:50 AM
+Room: CAFE
+Period 10:53
+Math 6
+10:53 AM - 11:20 AM
+Teacher: MITCHELL
+Room: B128
+Period 11:23
+Math 6
+11:23 AM - 11:50 AM
+Teacher: MITCHELL
+Room: B128
+Period 11:53
+Social Studies 6
+11:53 AM - 12:20 PM
+Teacher: ANDERSON
+Room: B130
+Period 12:23
+Social Studies 6
+12:23 PM - 12:50 PM
+Teacher: ANDERSON
+Room: B130
+Period 12:53
+French 1A
+12:53 PM - 1:50 PM
+Teacher: GARCIA
+Room: B125
+Period 01:53
+Family & Consumer Science 6
+1:53 PM - 2:50 PM
+Teacher: THOMPSON, Sarah
+Room: B112`;
+
+            document.getElementById('scheduleInput').value = sampleData;
+            showMessage('Sample data loaded! Click "Create Schedule Table" to see the result.', 'success');
+        }
+
+        function printSchedule() {
+            if (Object.keys(scheduleData).length === 0) {
+                showMessage('Please import a schedule first before printing.', 'error');
+                return;
+            }
+            
+            window.print();
+        }
+
+        // UI State Management
+        function showScheduleLoadedState() {
+            document.getElementById('importSection').style.display = 'none';
+            document.getElementById('scheduleLoadedSection').style.display = 'block';
+            document.getElementById('filterInline').style.display = 'flex';
+            updateScheduleInfo();
+        }
+
+        function showImportSection() {
+            document.getElementById('importSection').style.display = 'block';
+            document.getElementById('scheduleLoadedSection').style.display = 'none';
+            document.getElementById('filterInline').style.display = 'none';
+            // Clear the textarea for new input
+            document.getElementById('scheduleInput').value = '';
+        }
+
+        function updateScheduleInfo() {
+            const scheduleInfo = document.getElementById('scheduleInfo');
+            
+            if (!studentInfo.name && !studentInfo.school && Object.keys(scheduleData).length === 0) {
+                scheduleInfo.innerHTML = '';
+                return;
+            }
+
+            // Count statistics
+            const totalDays = Object.keys(scheduleData).length;
+            const subjects = new Set();
+            const teachers = new Set();
+            let totalClasses = 0;
+
+            Object.values(scheduleData).forEach(daySchedule => {
+                daySchedule.forEach(period => {
+                    if (period.subject && period.subject.trim() && !period.subject.toLowerCase().includes('lunch')) {
+                        subjects.add(period.subject.trim());
+                        totalClasses++;
+                    }
+                    if (period.teacher && period.teacher.trim()) {
+                        teachers.add(period.teacher.trim());
+                    }
+                });
+            });
+
+            const lastUpdated = new Date().toLocaleDateString();
+
+            // Create condensed info line
+            const infoItems = [];
+            if (studentInfo.name) infoItems.push(`<strong>Student:</strong> ${studentInfo.name}`);
+            if (studentInfo.school) infoItems.push(`<strong>School:</strong> ${studentInfo.school}`);
+            infoItems.push(`<strong>Updated:</strong> ${lastUpdated}`);
+            const infoLine = infoItems.join(' • ');
+
+            scheduleInfo.innerHTML = `
+                <h3>📊 Schedule Overview</h3>
+                <p style="font-size: 0.8em; margin-bottom: 8px;">${infoLine}</p>
+                
+                <div class="schedule-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">${totalDays}</span>
+                        <div class="stat-label">Schedule Days</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${subjects.size}</span>
+                        <div class="stat-label">Different Subjects</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${teachers.size}</span>
+                        <div class="stat-label">Teachers</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${totalClasses}</span>
+                        <div class="stat-label">Total Classes</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function clearAll() {
+            document.getElementById('scheduleInput').value = '';
+            document.getElementById('scheduleDisplay').innerHTML = '';
+            document.getElementById('messageArea').innerHTML = '';
+            document.getElementById('importSection').style.display = 'block';
+            document.getElementById('scheduleLoadedSection').style.display = 'none';
+            document.getElementById('filterInline').style.display = 'none';
+            scheduleData = {};
+            studentInfo = {};
+            localStorage.removeItem('scheduleViewerState'); // Clear saved state
+            showMessage('All data cleared!', 'success');
+        }
+
+        // Filter functions
+        function populateSubjectFilter() {
+            const subjectFilter = document.getElementById('subjectFilter');
+            const subjects = new Set();
+            
+            // Collect all unique subjects
+            Object.values(scheduleData).forEach(daySchedule => {
+                daySchedule.forEach(period => {
+                    if (period.subject && period.subject.trim()) {
+                        subjects.add(period.subject.trim());
+                    }
+                });
+            });
+            
+            // Clear existing options except "Show All"
+            subjectFilter.innerHTML = '<option value="">Show All Subjects</option>';
+            
+            // Add subject options
+            Array.from(subjects).sort().forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject;
+                option.textContent = subject;
+                subjectFilter.appendChild(option);
+            });
+        }
+
+        function applyFilter() {
+            const selectedSubject = document.getElementById('subjectFilter').value;
+            const allCells = document.querySelectorAll('.class-cell');
+            
+            allCells.forEach(cell => {
+                cell.classList.remove('filtered-highlight', 'filtered-dim');
+                
+                if (selectedSubject) {
+                    const classNameDiv = cell.querySelector('.class-name');
+                    if (classNameDiv && classNameDiv.textContent.trim() === selectedSubject) {
+                        cell.classList.add('filtered-highlight');
+                    } else {
+                        cell.classList.add('filtered-dim');
+                    }
+                }
+            });
+        }
+
+        function clearFilter() {
+            document.getElementById('subjectFilter').value = '';
+            applyFilter(); // This will remove all filtering
+        }
+
+        // Auto-load saved state on page load
+        window.addEventListener('load', function() {
+            loadState();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <!-- Blue background with rounded corners -->
+  <rect width="16" height="16" rx="2" fill="#3498db"/>
+  
+  <!-- White calendar background -->
+  <rect x="2" y="3" width="12" height="10" rx="1" fill="#ffffff"/>
+  
+  <!-- Dark blue header bar -->
+  <rect x="2" y="3" width="12" height="2.5" rx="1" fill="#2c3e50"/>
+  
+  <!-- Simple grid pattern -->
+  <g stroke="#e8e8e8" stroke-width="0.5" fill="none">
+    <!-- Horizontal lines -->
+    <line x1="3" y1="7" x2="13" y2="7"/>
+    <line x1="3" y1="9" x2="13" y2="9"/>
+    <line x1="3" y1="11" x2="13" y2="11"/>
+    <!-- Vertical lines -->
+    <line x1="6" y1="5.5" x2="6" y2="13"/>
+    <line x1="10" y1="5.5" x2="10" y2="13"/>
+  </g>
+  
+  <!-- Colorful schedule blocks -->
+  <rect x="3.2" y="5.7" width="2.3" height="1" rx="0.2" fill="#e74c3c"/>
+  <rect x="6.5" y="5.7" width="2.3" height="1" rx="0.2" fill="#27ae60"/>
+  <rect x="10.2" y="5.7" width="2.3" height="1" rx="0.2" fill="#9b59b6"/>
+  
+  <rect x="3.2" y="7.5" width="2.3" height="1" rx="0.2" fill="#f39c12"/>
+  <rect x="6.5" y="7.5" width="2.3" height="1" rx="0.2" fill="#00bcd4"/>
+  <rect x="10.2" y="7.5" width="2.3" height="1" rx="0.2" fill="#e91e63"/>
+  
+  <rect x="3.2" y="9.3" width="2.3" height="1" rx="0.2" fill="#8bc34a"/>
+  <rect x="6.5" y="9.3" width="2.3" height="1" rx="0.2" fill="#fd79a8"/>
+  
+  <!-- Small binding holes for calendar effect -->
+  <circle cx="4" cy="4.2" r="0.4" fill="#95a5a6"/>
+  <circle cx="12" cy="4.2" r="0.4" fill="#95a5a6"/>
+</svg>

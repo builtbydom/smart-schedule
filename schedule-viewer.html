@@ -295,7 +295,56 @@
         .flex { background-color: #f5f5f5; border-left: 4px solid #607d8b; }          /* Blue Grey */
         .homeroom { background-color: #fff7e6; border-left: 4px solid #ff9800; }      /* Amber */
         .lunch { background-color: #ffeaa7; border-left: 4px solid #fdcb6e; }         /* Yellow */
-        .unknown { background-color: #f8f9fa; border-left: 4px solid #6c757d; }        /* Light Grey - Unknown Subjects */
+        .unknown { background-color: #f8f9fa; border-left: 4px solid #6c757d; }
+
+        /* Activity styling */
+        .activity { background-color: #fff3e6; border-left: 4px solid #ff9500; border: 2px solid #ff9500; }
+        .activity-conflict { background: repeating-linear-gradient(45deg, #ffe6e6, #ffe6e6 10px, #fff3e6 10px, #fff3e6 20px); border: 2px solid #dc3545; }
+        
+        .activity-item {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .activity-info {
+            flex: 1;
+        }
+        
+        .activity-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        
+        .activity-details {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .activity-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .activity-actions button {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 3px;
+        }
+        
+        .edit-activity-btn {
+            background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%) !important;
+        }
+        
+        .delete-activity-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%) !important;
+        }
 
         .student-info {
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
@@ -808,10 +857,11 @@
 
             <div class="control-section" id="scheduleLoadedSection" style="display: none;">
                 <h2>📋 Schedule Ready</h2>
-                <p>Your schedule is loaded! Print it, filter by subject, or upload a new one.</p>
+                <p>Your schedule is loaded! Print it, filter by subject, add activities, or upload a new one.</p>
                 
                 <div class="button-group">
                     <button class="print-btn" onclick="printSchedule()">🖨️ Print Schedule</button>
+                    <button onclick="showActivitySection()" style="background: linear-gradient(135deg, #ff9500 0%, #ffad33 100%);">⚽ Add Activities</button>
                     <button onclick="showImportSection()">📝 Upload New</button>
                     <button class="clear-btn" onclick="clearAll()">🗑️ Clear All</button>
                 </div>
@@ -829,6 +879,45 @@
                 </div>
             </div>
 
+            <div class="control-section" id="activitySection" style="display: none;">
+                <h2>⚽ Add Extracurricular Activities</h2>
+                <p>Add recurring activities like sports, clubs, and after-school programs to your schedule.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #333;">Activity Name:</label>
+                        <input type="text" id="activityName" placeholder="e.g., Soccer Practice, Chess Club" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #333;">Time:</label>
+                        <input type="text" id="activityTime" placeholder="e.g., 3:30 PM - 5:00 PM" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Days of the Week:</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="dayMon" value="Mon"> Monday</label>
+                        <label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="dayTue" value="Tues"> Tuesday</label>
+                        <label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="dayWed" value="Weds"> Wednesday</label>
+                        <label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="dayThu" value="Thurs"> Thursday</label>
+                        <label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="dayFri" value="Fri"> Friday</label>
+                        <label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="daySat" value="Sat"> Saturday</label>
+                        <label style="display: flex; align-items: center; gap: 5px;"><input type="checkbox" id="daySun" value="Sun"> Sunday</label>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="addActivity()" style="background: linear-gradient(135deg, #28a745 0%, #32cd32 100%);">✅ Add Activity</button>
+                    <button onclick="hideActivitySection()">❌ Cancel</button>
+                </div>
+                
+                <div id="activitiesList" style="margin-top: 20px;">
+                    <h3 style="color: #333; margin-bottom: 10px;">📋 Current Activities</h3>
+                    <div id="activitiesContainer"></div>
+                </div>
+            </div>
+
             <div id="messageArea"></div>
             <div id="scheduleDisplay"></div>
         </div>
@@ -837,6 +926,7 @@
     <script>
         let scheduleData = {};
         let studentInfo = {};
+        let activities = [];
 
         function parseTime(timeStr) {
             // Convert time string like "8:10 AM" or "1:53 PM" to minutes since midnight
@@ -1112,12 +1202,37 @@
                         const comparison = dayComparisons[dayName];
                         const period = comparison.aPeriod || comparison.bPeriod; // Use whichever exists
                         
-                        if (period) {
+                        // Check for activities on this day and time
+                        const dayActivities = activities.filter(activity => 
+                            activity.days.includes(dayName) && 
+                            checkTimeConflict(time, activity.time)
+                        );
+                        
+                        if (period && dayActivities.length > 0) {
+                            // Conflict: both school and activity
+                            const subjectClass = getSubjectClass(period.subject);
+                            html += `<td class="class-cell activity-conflict">
+                                <div class="class-name">${period.subject}</div>
+                                <div class="teacher-name">${period.teacher}</div>
+                                <div class="room-name">${period.room}</div>
+                                <div style="margin-top: 4px; padding: 2px 4px; background: rgba(255,149,0,0.2); border-radius: 3px; font-size: 10px; color: #ff6600;">
+                                    ⚠️ ${dayActivities[0].name}
+                                </div>
+                            </td>`;
+                        } else if (period) {
+                            // Regular school period
                             const subjectClass = getSubjectClass(period.subject);
                             html += `<td class="class-cell ${subjectClass}">
                                 <div class="class-name">${period.subject}</div>
                                 <div class="teacher-name">${period.teacher}</div>
                                 <div class="room-name">${period.room}</div>
+                            </td>`;
+                        } else if (dayActivities.length > 0) {
+                            // Activity only (no school conflict)
+                            html += `<td class="class-cell activity">
+                                <div class="class-name">${dayActivities[0].name}</div>
+                                <div class="teacher-name">Extracurricular Activity</div>
+                                <div class="room-name">${dayActivities[0].time}</div>
                             </td>`;
                         } else {
                             html += '<td class="class-cell">-</td>';
@@ -1134,12 +1249,36 @@
                         const comparison = dayComparisons[dayName];
                         const aPeriod = comparison.aPeriod;
                         
-                        if (aPeriod) {
+                        // Check for activities on this day and time
+                        const dayActivities = activities.filter(activity => 
+                            activity.days.includes(dayName) && 
+                            checkTimeConflict(time, activity.time)
+                        );
+                        
+                        if (aPeriod && dayActivities.length > 0) {
+                            // Conflict: both school and activity
+                            const subjectClass = getSubjectClass(aPeriod.subject);
+                            html += `<td class="class-cell activity-conflict">
+                                <div class="class-name">${aPeriod.subject}</div>
+                                <div class="teacher-name">${aPeriod.teacher}</div>
+                                <div class="room-name">${aPeriod.room}</div>
+                                <div style="margin-top: 4px; padding: 2px 4px; background: rgba(255,149,0,0.2); border-radius: 3px; font-size: 10px; color: #ff6600;">
+                                    ⚠️ ${dayActivities[0].name}
+                                </div>
+                            </td>`;
+                        } else if (aPeriod) {
                             const subjectClass = getSubjectClass(aPeriod.subject);
                             html += `<td class="class-cell ${subjectClass}">
                                 <div class="class-name">${aPeriod.subject}</div>
                                 <div class="teacher-name">${aPeriod.teacher}</div>
                                 <div class="room-name">${aPeriod.room}</div>
+                            </td>`;
+                        } else if (dayActivities.length > 0) {
+                            // Activity only (no school conflict)
+                            html += `<td class="class-cell activity">
+                                <div class="class-name">${dayActivities[0].name}</div>
+                                <div class="teacher-name">Extracurricular Activity</div>
+                                <div class="room-name">${dayActivities[0].time}</div>
                             </td>`;
                         } else {
                             html += '<td class="class-cell">-</td>';
@@ -1155,12 +1294,36 @@
                         const comparison = dayComparisons[dayName];
                         const bPeriod = comparison.bPeriod;
                         
-                        if (bPeriod) {
+                        // Check for activities on this day and time
+                        const dayActivities = activities.filter(activity => 
+                            activity.days.includes(dayName) && 
+                            checkTimeConflict(time, activity.time)
+                        );
+                        
+                        if (bPeriod && dayActivities.length > 0) {
+                            // Conflict: both school and activity
+                            const subjectClass = getSubjectClass(bPeriod.subject);
+                            html += `<td class="class-cell activity-conflict">
+                                <div class="class-name">${bPeriod.subject}</div>
+                                <div class="teacher-name">${bPeriod.teacher}</div>
+                                <div class="room-name">${bPeriod.room}</div>
+                                <div style="margin-top: 4px; padding: 2px 4px; background: rgba(255,149,0,0.2); border-radius: 3px; font-size: 10px; color: #ff6600;">
+                                    ⚠️ ${dayActivities[0].name}
+                                </div>
+                            </td>`;
+                        } else if (bPeriod) {
                             const subjectClass = getSubjectClass(bPeriod.subject);
                             html += `<td class="class-cell ${subjectClass}">
                                 <div class="class-name">${bPeriod.subject}</div>
                                 <div class="teacher-name">${bPeriod.teacher}</div>
                                 <div class="room-name">${bPeriod.room}</div>
+                            </td>`;
+                        } else if (dayActivities.length > 0) {
+                            // Activity only (no school conflict)
+                            html += `<td class="class-cell activity">
+                                <div class="class-name">${dayActivities[0].name}</div>
+                                <div class="teacher-name">Extracurricular Activity</div>
+                                <div class="room-name">${dayActivities[0].time}</div>
                             </td>`;
                         } else {
                             html += '<td class="class-cell">-</td>';
@@ -1189,6 +1352,8 @@
                         <div class="legend-item flex">📚 FLEX</div>
                         <div class="legend-item homeroom">🏫 Homeroom</div>
                         <div class="legend-item lunch">🍽️ Lunch</div>
+                        <div class="legend-item activity">⚽ Activities</div>
+                        <div class="legend-item activity-conflict">⚠️ Conflicts</div>
                         <div class="legend-item unknown">❓ Other Subjects</div>
                     </div>
                 </div>
@@ -1801,9 +1966,12 @@ Room: B112`;
             document.getElementById('importSection').style.display = 'block';
             document.getElementById('scheduleLoadedSection').style.display = 'none';
             document.getElementById('filterInline').style.display = 'none';
+            document.getElementById('activitySection').style.display = 'none';
             scheduleData = {};
             studentInfo = {};
+            activities = [];
             localStorage.removeItem('scheduleViewerState'); // Clear saved state
+            localStorage.removeItem('scheduleViewerActivities'); // Clear saved activities
             showMessage('All data cleared!', 'success');
         }
 
@@ -1856,9 +2024,182 @@ Room: B112`;
             applyFilter(); // This will remove all filtering
         }
 
+        // Activity Management Functions
+        function showActivitySection() {
+            document.getElementById('activitySection').style.display = 'block';
+            displayActivities();
+        }
+
+        function hideActivitySection() {
+            document.getElementById('activitySection').style.display = 'none';
+            clearActivityForm();
+        }
+
+        function clearActivityForm() {
+            document.getElementById('activityName').value = '';
+            document.getElementById('activityTime').value = '';
+            const checkboxes = ['dayMon', 'dayTue', 'dayWed', 'dayThu', 'dayFri', 'daySat', 'daySun'];
+            checkboxes.forEach(id => document.getElementById(id).checked = false);
+        }
+
+        function addActivity() {
+            const name = document.getElementById('activityName').value.trim();
+            const time = document.getElementById('activityTime').value.trim();
+            const selectedDays = [];
+            
+            const dayMapping = {
+                'dayMon': 'Mon',
+                'dayTue': 'Tues', 
+                'dayWed': 'Weds',
+                'dayThu': 'Thurs',
+                'dayFri': 'Fri',
+                'daySat': 'Sat',
+                'daySun': 'Sun'
+            };
+            
+            Object.keys(dayMapping).forEach(id => {
+                if (document.getElementById(id).checked) {
+                    selectedDays.push(dayMapping[id]);
+                }
+            });
+
+            if (!name || !time || selectedDays.length === 0) {
+                showMessage('Please fill in all fields and select at least one day.', 'error');
+                return;
+            }
+
+            const activity = {
+                id: Date.now(),
+                name: name,
+                time: time,
+                days: selectedDays
+            };
+
+            activities.push(activity);
+            saveActivities();
+            displayActivities();
+            displaySchedule(); // Refresh schedule to show activities
+            clearActivityForm();
+            showMessage(`Activity "${name}" added successfully! 🎉`, 'success');
+        }
+
+        function editActivity(id) {
+            const activity = activities.find(a => a.id === id);
+            if (!activity) return;
+
+            document.getElementById('activityName').value = activity.name;
+            document.getElementById('activityTime').value = activity.time;
+            
+            // Clear all checkboxes first
+            const dayMapping = {
+                'Mon': 'dayMon',
+                'Tues': 'dayTue', 
+                'Weds': 'dayWed',
+                'Thurs': 'dayThu',
+                'Fri': 'dayFri',
+                'Sat': 'daySat',
+                'Sun': 'daySun'
+            };
+            
+            Object.values(dayMapping).forEach(id => {
+                document.getElementById(id).checked = false;
+            });
+            
+            // Check the appropriate days
+            activity.days.forEach(day => {
+                const checkboxId = dayMapping[day];
+                if (checkboxId) {
+                    document.getElementById(checkboxId).checked = true;
+                }
+            });
+
+            // Remove the activity and let user re-add it
+            deleteActivity(id, false);
+            showMessage('Edit the activity details and click "Add Activity" to save changes.', 'success');
+        }
+
+        function deleteActivity(id, showConfirm = true) {
+            if (showConfirm && !confirm('Are you sure you want to delete this activity?')) {
+                return;
+            }
+            
+            activities = activities.filter(a => a.id !== id);
+            saveActivities();
+            displayActivities();
+            displaySchedule(); // Refresh schedule to remove activities
+            
+            if (showConfirm) {
+                showMessage('Activity deleted successfully.', 'success');
+            }
+        }
+
+        function displayActivities() {
+            const container = document.getElementById('activitiesContainer');
+            
+            if (activities.length === 0) {
+                container.innerHTML = '<p style="color: #666; font-style: italic;">No activities added yet.</p>';
+                return;
+            }
+
+            container.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-info">
+                        <div class="activity-name">${activity.name}</div>
+                        <div class="activity-details">${activity.days.join(', ')} • ${activity.time}</div>
+                    </div>
+                    <div class="activity-actions">
+                        <button class="edit-activity-btn" onclick="editActivity(${activity.id})">✏️ Edit</button>
+                        <button class="delete-activity-btn" onclick="deleteActivity(${activity.id})">🗑️ Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveActivities() {
+            localStorage.setItem('scheduleViewerActivities', JSON.stringify(activities));
+        }
+
+        function loadActivities() {
+            try {
+                const saved = localStorage.getItem('scheduleViewerActivities');
+                if (saved) {
+                    activities = JSON.parse(saved);
+                }
+            } catch (error) {
+                console.error('Error loading activities:', error);
+                activities = [];
+            }
+        }
+
+        function checkTimeConflict(scheduleTime, activityTime) {
+            // Simple conflict detection - check if times overlap
+            // This is a basic implementation that can be enhanced
+            try {
+                const parseTimeRange = (timeStr) => {
+                    const parts = timeStr.split(' - ');
+                    if (parts.length !== 2) return null;
+                    
+                    const start = parseTime(parts[0]);
+                    const end = parseTime(parts[1]);
+                    return { start, end };
+                };
+
+                const scheduleRange = parseTimeRange(scheduleTime);
+                const activityRange = parseTimeRange(activityTime);
+                
+                if (!scheduleRange || !activityRange) return false;
+                
+                // Check for overlap
+                return (scheduleRange.start < activityRange.end && scheduleRange.end > activityRange.start);
+            } catch (error) {
+                return false;
+            }
+        }
+
         // Auto-load saved state on page load
         window.addEventListener('load', function() {
             loadState();
+            loadActivities();
         });
     </script>
 </body>

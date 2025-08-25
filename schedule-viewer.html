@@ -1629,7 +1629,30 @@
                 if (userTime) {
                     // Use user-provided time (normalize it to handle ambiguous formats)
                     const startMinutes = parseTime(userTime);
-                    const endMinutes = startMinutes + 57; // Default 57-minute duration
+                    let endMinutes;
+                    
+                    // Special handling for homeroom periods - calculate end time based on next period
+                    if (period.period === 'Period HR') {
+                        // Find the next period's start time
+                        const nextPeriodIndex = periodInfo.index + 1;
+                        if (nextPeriodIndex < daySchedule.length) {
+                            const nextPeriod = daySchedule[nextPeriodIndex];
+                            if (nextPeriod.time && nextPeriod.time.includes('-')) {
+                                const nextStartTime = nextPeriod.time.split(' - ')[0];
+                                endMinutes = parseTime(nextStartTime);
+                                console.log(`HR: Using next period start time: ${nextStartTime} (${endMinutes} minutes)`);
+                            } else {
+                                endMinutes = startMinutes + 57; // Fallback to default duration
+                                console.log(`HR: No next period time found, using default duration`);
+                            }
+                        } else {
+                            endMinutes = startMinutes + 57; // Fallback to default duration
+                            console.log(`HR: No next period, using default duration`);
+                        }
+                    } else {
+                        endMinutes = startMinutes + 57; // Default 57-minute duration for other periods
+                    }
+                    
                     const normalizedStartTime = minutesToTimeString(startMinutes);
                     const endTime = minutesToTimeString(endMinutes);
                     period.time = `${normalizedStartTime} - ${endTime}`;
@@ -1659,6 +1682,19 @@
         }
 
         function assignDefaultTime(period, index) {
+            // Special handling for homeroom periods
+            if (period.period === 'Period HR') {
+                // For homeroom, use a short duration (typically 10-15 minutes)
+                const startTime = "7:45 AM";
+                const startMinutes = parseTime(startTime);
+                const endMinutes = startMinutes + 10; // 10-minute homeroom
+                const endTime = minutesToTimeString(endMinutes);
+                
+                period.time = `${startTime} - ${endTime}`;
+                console.log(`Default homeroom time assigned: ${period.time}`);
+                return;
+            }
+            
             // Assign reasonable default times based on period position
             const defaultStartTimes = [
                 "7:45 AM", // Period 0 (HR)
@@ -2034,7 +2070,7 @@
                         }
                         // For homeroom without time, we'll add a placeholder time for display
                         if (isHomeroom && !hasValidTime) {
-                            allTimes.add('7:45 AM - 7:55 AM'); // Default homeroom time
+                            allTimes.add('7:45 AM - 7:55 AM'); // Default homeroom time (10 minutes)
                         }
                     }
                 });

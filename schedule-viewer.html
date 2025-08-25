@@ -1967,11 +1967,32 @@
                     const bTeacher = bPeriod ? bPeriod.teacher : '';
                     const bRoom = bPeriod ? bPeriod.room : '';
                     
-                    // More flexible comparison - consider periods identical if they're the same class
-                    // even if teacher/room details might be missing or slightly different
+                    // Enhanced comparison for better merging
                     const subjectsMatch = aSubject === bSubject;
                     const bothEmpty = !aSubject && !bSubject;
-                    const identical = subjectsMatch || bothEmpty;
+                    
+                    // Normalize subjects for comparison (remove extra spaces, etc.)
+                    const normalizedA = aSubject ? aSubject.trim().toLowerCase() : '';
+                    const normalizedB = bSubject ? bSubject.trim().toLowerCase() : '';
+                    
+                    // Special handling for periods that should typically merge
+                    const isLunchPeriod = normalizedA.includes('lunch') || normalizedB.includes('lunch');
+                    const isStudyHall = normalizedA.includes('study') || normalizedB.includes('study') || 
+                                      normalizedA.includes('flex') || normalizedB.includes('flex');
+                    const isPE = normalizedA.includes('pe ') || normalizedA.includes('physical') || 
+                                normalizedB.includes('pe ') || normalizedB.includes('physical') ||
+                                normalizedA.includes('gym') || normalizedB.includes('gym');
+                    const isHomework = normalizedA.includes('homework') || normalizedB.includes('homework') ||
+                                      normalizedA.includes('hr') || normalizedB.includes('hr');
+                    
+                    // More intelligent merging
+                    let identical = subjectsMatch || bothEmpty;
+                    
+                    // Enhanced merging for common periods
+                    if ((isLunchPeriod || isStudyHall || isPE || isHomework) && subjectsMatch) {
+                        identical = true;
+                        console.log(`Merging identical period: "${aSubject}" (${time})`);
+                    }
                     
                     dayComparisons[dayName] = { identical, aPeriod, bPeriod };
                     
@@ -2691,7 +2712,7 @@ Room: B112`;
 
         function exportToJson() {
             if (Object.keys(scheduleData).length === 0 && activities.length === 0) {
-                showMessage('Please import a schedule or add activities first before exporting.', 'error');
+                showMessage('Please import a schedule or add activities first before viewing JSON.', 'error');
                 return;
             }
 
@@ -2717,29 +2738,84 @@ Room: B112`;
             // Convert to formatted JSON
             const jsonString = JSON.stringify(exportData, null, 2);
             
-            // Create downloadable file
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
+            // Show JSON in popup modal
+            showJsonModal(jsonString);
             
-            // Create download link
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `schedule-export-${new Date().toISOString().split('T')[0]}.json`;
-            
-            // Trigger download
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Clean up
-            URL.revokeObjectURL(url);
-            
-            showMessage('📄 Schedule data exported to JSON file! Check your downloads folder.', 'success');
-            
-            // Also log to console for immediate inspection
+            // Also log to console for debugging
             console.log('=== EXPORTED SCHEDULE DATA ===');
             console.log(exportData);
             console.log('=== END EXPORT DATA ===');
+        }
+
+        function showJsonModal(jsonString) {
+            const modalHTML = `
+                <div class="modal-overlay" id="jsonModal">
+                    <div class="modal-content" style="max-width: 800px; width: 95%;">
+                        <div class="modal-header">
+                            <h2>📄 Schedule Data (JSON)</h2>
+                            <p>Copy the JSON data below for debugging or backup purposes</p>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <textarea id="jsonTextarea" readonly style="
+                                width: 100%; 
+                                height: 400px; 
+                                font-family: 'Courier New', monospace; 
+                                font-size: 12px; 
+                                padding: 16px; 
+                                border: 2px solid #e9ecef; 
+                                border-radius: 8px; 
+                                background: #f8f9fa;
+                                resize: vertical;
+                            ">${jsonString}</textarea>
+                        </div>
+                        
+                        <div class="modal-buttons">
+                            <button class="modal-btn modal-btn-primary" onclick="copyJsonToClipboard()">
+                                📋 Copy to Clipboard
+                            </button>
+                            <button class="modal-btn modal-btn-secondary" onclick="closeJsonModal()">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Select all text when opened
+            setTimeout(() => {
+                const textarea = document.getElementById('jsonTextarea');
+                textarea.select();
+                textarea.focus();
+            }, 100);
+            
+            // Add keyboard support
+            document.addEventListener('keydown', handleJsonModalKeydown);
+        }
+
+        function handleJsonModalKeydown(e) {
+            if (e.key === 'Escape') {
+                closeJsonModal();
+            } else if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+                copyJsonToClipboard();
+            }
+        }
+
+        function copyJsonToClipboard() {
+            const textarea = document.getElementById('jsonTextarea');
+            textarea.select();
+            document.execCommand('copy');
+            showMessage('📋 JSON data copied to clipboard!', 'success');
+        }
+
+        function closeJsonModal() {
+            const modal = document.getElementById('jsonModal');
+            if (modal) {
+                modal.remove();
+            }
+            document.removeEventListener('keydown', handleJsonModalKeydown);
         }
 
         // Class Editing Functions

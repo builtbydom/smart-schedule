@@ -1535,13 +1535,23 @@
                         }
                         
                         // Only add the period if it has valid data
-                        if (currentDay && currentPeriod && currentPeriod.subject && currentPeriod.subject.trim().length > 0) {
+                        if (currentDay && 
+                            currentPeriod && 
+                            currentPeriod.subject && 
+                            currentPeriod.subject.trim().length > 0 &&
+                            !currentPeriod.subject.toLowerCase().includes('undefined') &&
+                            currentPeriod.subject !== '-' &&
+                            currentPeriod.subject !== 'null') {
+                            
                             // Clean up any remaining whitespace or special characters
                             currentPeriod.subject = currentPeriod.subject.trim();
                             currentPeriod.teacher = currentPeriod.teacher.trim();
                             currentPeriod.room = currentPeriod.room.trim();
                             
-                            scheduleData[currentDay].push(currentPeriod);
+                            // Additional validation: don't add periods with empty/meaningless content
+                            if (currentPeriod.subject.length > 0) {
+                                scheduleData[currentDay].push(currentPeriod);
+                            }
                         }
                     }
                     i++;
@@ -1549,6 +1559,28 @@
 
                 // Calculate missing time ranges for Format 2
                 calculateMissingTimes();
+
+                // Final cleanup: remove any periods that ended up with invalid data
+                Object.keys(scheduleData).forEach(day => {
+                    const beforeCount = scheduleData[day].length;
+                    scheduleData[day] = scheduleData[day].filter(period => {
+                        const isValid = period.time && 
+                                       period.time.includes('-') && 
+                                       period.subject && 
+                                       period.subject.trim().length > 0 &&
+                                       period.time.trim() !== '-' &&
+                                       !period.subject.toLowerCase().includes('undefined');
+                        
+                        if (!isValid) {
+                            console.log(`Removing invalid period from ${day}:`, period);
+                        }
+                        return isValid;
+                    });
+                    const afterCount = scheduleData[day].length;
+                    if (beforeCount !== afterCount) {
+                        console.log(`Cleaned ${day}: removed ${beforeCount - afterCount} invalid periods`);
+                    }
+                });
 
                 displaySchedule();
                 saveState(); // Save the schedule data
@@ -1604,7 +1636,13 @@
             const allTimes = new Set();
             Object.values(scheduleData).forEach(daySchedule => {
                 daySchedule.forEach(period => {
-                    if (period.time && period.time.includes('-')) {
+                    // Only include periods with valid time data AND meaningful content
+                    if (period.time && 
+                        period.time.includes('-') && 
+                        period.subject && 
+                        period.subject.trim().length > 0 &&
+                        !period.subject.toLowerCase().includes('undefined') &&
+                        period.time.trim() !== '-') {
                         allTimes.add(period.time);
                     }
                 });
@@ -1645,8 +1683,6 @@
 
             // Data rows
             finalSortedTimes.forEach(time => {
-                console.log('Processing time slot:', time);
-                console.log('Available activities:', activities);
                 
                 // Check if A and B schedules are identical for this time across all days
                 let allDaysIdentical = true;
@@ -1687,7 +1723,7 @@
                         const dayActivities = activities.filter(activity => {
                             const dayMatch = activity.days.includes(dayName);
                             const timeMatch = checkTimeMatch(time, activity.time);
-                            console.log(`Activity ${activity.name}: day ${dayName} match=${dayMatch}, time ${time} vs ${activity.time} match=${timeMatch}`);
+
                             return dayMatch && timeMatch;
                         });
                         
@@ -1736,7 +1772,7 @@
                         const dayActivities = activities.filter(activity => {
                             const dayMatch = activity.days.includes(dayName);
                             const timeMatch = checkTimeMatch(time, activity.time);
-                            console.log(`Activity ${activity.name}: day ${dayName} match=${dayMatch}, time ${time} vs ${activity.time} match=${timeMatch}`);
+
                             return dayMatch && timeMatch;
                         });
                         
@@ -1783,7 +1819,7 @@
                         const dayActivities = activities.filter(activity => {
                             const dayMatch = activity.days.includes(dayName);
                             const timeMatch = checkTimeMatch(time, activity.time);
-                            console.log(`Activity ${activity.name}: day ${dayName} match=${dayMatch}, time ${time} vs ${activity.time} match=${timeMatch}`);
+
                             return dayMatch && timeMatch;
                         });
                         

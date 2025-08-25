@@ -346,6 +346,153 @@
             background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%) !important;
         }
 
+        /* Modern popup/modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-20px) scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-header h2 {
+            color: #2c3e50;
+            font-size: 1.6em;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .modal-header p {
+            color: #7f8c8d;
+            font-size: 1em;
+            line-height: 1.5;
+        }
+
+        .time-input-group {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .time-input-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 1em;
+        }
+
+        .time-input-details {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 12px;
+        }
+
+        .time-input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        .time-input-field:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .time-input-field.error {
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .modal-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .modal-btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(52, 152, 219, 0.3);
+        }
+
+        .modal-btn-secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 2px solid #e9ecef;
+        }
+
+        .modal-btn-secondary:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .time-hint {
+            font-size: 0.85em;
+            color: #17a2b8;
+            margin-top: 4px;
+            font-style: italic;
+        }
+
         .student-info {
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
@@ -1027,40 +1174,143 @@
         }
 
         function promptForMissingTimes(periodsNeedingTimes) {
-            let message = `Some periods don't have time information. Please provide the start times:\n\n`;
+            showTimeInputModal(periodsNeedingTimes);
+        }
+
+        function showTimeInputModal(periodsNeedingTimes) {
+            // Create modal HTML
+            const modalHTML = `
+                <div class="modal-overlay" id="timeInputModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>⏰ Missing Time Information</h2>
+                            <p>Some periods don't have start times. Please provide them below, or use our smart defaults.</p>
+                        </div>
+                        
+                        <div id="timeInputFields">
+                            ${periodsNeedingTimes.map((periodInfo, index) => `
+                                <div class="time-input-group">
+                                    <label class="time-input-label">
+                                        ${periodInfo.day} - ${periodInfo.period}
+                                    </label>
+                                    <div class="time-input-details">
+                                        Subject: ${periodInfo.subject}
+                                    </div>
+                                    <input type="text" 
+                                           class="time-input-field" 
+                                           id="timeInput${index}"
+                                           placeholder="8:15 AM"
+                                           data-index="${index}">
+                                    <div class="time-hint">Example: 7:45 AM, 8:23 AM, 12:30 PM</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="modal-buttons">
+                            <button class="modal-btn modal-btn-secondary" onclick="useDefaultTimes()">
+                                Use Smart Defaults
+                            </button>
+                            <button class="modal-btn modal-btn-primary" onclick="submitCustomTimes()">
+                                Apply Times
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
             
-            periodsNeedingTimes.forEach((periodInfo, index) => {
-                message += `${index + 1}. ${periodInfo.day} - ${periodInfo.period} (${periodInfo.subject})\n`;
-            });
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
             
-            message += `\nFormat: 8:10 AM (one time per line)\nClick OK to enter times, or Cancel to use default times.`;
+            // Store periods data for later use
+            window.currentPeriodsNeedingTimes = periodsNeedingTimes;
             
-            if (confirm(message)) {
-                collectMissingTimes(periodsNeedingTimes);
-            } else {
-                // Use default times for periods that couldn't be calculated
-                assignDefaultTimes(periodsNeedingTimes);
+            // Focus first input and add keyboard support
+            setTimeout(() => {
+                const firstInput = document.getElementById('timeInput0');
+                if (firstInput) firstInput.focus();
+                
+                // Add keyboard event listeners
+                document.addEventListener('keydown', handleModalKeydown);
+                
+                // Add enter key support for inputs
+                const inputs = document.querySelectorAll('.time-input-field');
+                inputs.forEach((input, index) => {
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            const nextInput = document.getElementById(`timeInput${index + 1}`);
+                            if (nextInput) {
+                                nextInput.focus();
+                            } else {
+                                submitCustomTimes();
+                            }
+                        }
+                    });
+                });
+            }, 100);
+        }
+
+        function handleModalKeydown(e) {
+            if (e.key === 'Escape') {
+                useDefaultTimes();
             }
         }
 
-        function collectMissingTimes(periodsNeedingTimes) {
+        function submitCustomTimes() {
+            const periodsNeedingTimes = window.currentPeriodsNeedingTimes;
             const times = [];
+            let hasErrors = false;
             
+            // Collect and validate times
             for (let i = 0; i < periodsNeedingTimes.length; i++) {
-                const periodInfo = periodsNeedingTimes[i];
-                const timeInput = prompt(
-                    `Enter start time for:\n${periodInfo.day} - ${periodInfo.period} (${periodInfo.subject})\n\nFormat: 8:10 AM`
-                );
+                const input = document.getElementById(`timeInput${i}`);
+                const value = input.value.trim();
                 
-                if (timeInput && timeInput.trim()) {
-                    times.push(timeInput.trim());
+                if (value) {
+                    // Basic validation for time format
+                    if (isValidTimeFormat(value)) {
+                        times.push(value);
+                        input.classList.remove('error');
+                    } else {
+                        input.classList.add('error');
+                        hasErrors = true;
+                    }
                 } else {
-                    times.push(null); // User skipped
+                    times.push(null); // Empty = use default
+                    input.classList.remove('error');
                 }
             }
             
-            // Apply the collected times
+            if (hasErrors) {
+                showMessage('Please check the highlighted time formats. Use format like "8:15 AM" or "12:30 PM".', 'error');
+                return;
+            }
+            
+            // Close modal and apply times
+            closeTimeInputModal();
             applyUserProvidedTimes(periodsNeedingTimes, times);
+        }
+
+        function useDefaultTimes() {
+            const periodsNeedingTimes = window.currentPeriodsNeedingTimes;
+            closeTimeInputModal();
+            assignDefaultTimes(periodsNeedingTimes);
+            showMessage('Smart default times have been applied to your schedule! 🎉', 'success');
+        }
+
+        function closeTimeInputModal() {
+            const modal = document.getElementById('timeInputModal');
+            if (modal) {
+                modal.remove();
+            }
+            // Clean up event listeners
+            document.removeEventListener('keydown', handleModalKeydown);
+            window.currentPeriodsNeedingTimes = null;
+        }
+
+        function isValidTimeFormat(timeStr) {
+            // Check for basic time format: H:MM AM/PM or HH:MM AM/PM
+            const timePattern = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
+            return timePattern.test(timeStr.trim());
         }
 
         function applyUserProvidedTimes(periodsNeedingTimes, times) {

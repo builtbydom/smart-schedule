@@ -1430,6 +1430,62 @@
             showTimeInputModal(periodsNeedingTimes);
         }
 
+        function analyzeTimePatterns(periodsNeedingTimes) {
+            // Group periods by subject and analyze patterns
+            const subjectGroups = {};
+            periodsNeedingTimes.forEach(period => {
+                if (!subjectGroups[period.subject]) {
+                    subjectGroups[period.subject] = [];
+                }
+                subjectGroups[period.subject].push(period);
+            });
+            
+            // Create pattern objects
+            const patterns = Object.keys(subjectGroups).map(subject => ({
+                subject: subject,
+                count: subjectGroups[subject].length,
+                days: subjectGroups[subject].map(p => p.day),
+                periods: subjectGroups[subject]
+            }));
+            
+            // Sort by count (most frequent first)
+            return patterns.sort((a, b) => b.count - a.count);
+        }
+
+        function generateSmartSuggestions(periodsNeedingTimes) {
+            // Common school time patterns
+            const commonTimes = [
+                { time: "7:45 AM", subjects: ["Homeroom", "HR"] },
+                { time: "8:23 AM", subjects: ["Math", "Language Arts", "English"] },
+                { time: "9:20 AM", subjects: ["Science", "Social Studies", "History"] },
+                { time: "10:23 AM", subjects: ["Lunch", "PE", "Gym"] },
+                { time: "11:23 AM", subjects: ["Electives", "Band", "Art"] },
+                { time: "12:23 PM", subjects: ["Afternoon classes"] },
+                { time: "1:23 PM", subjects: ["Late afternoon"] }
+            ];
+            
+            // Match subjects to common times
+            const suggestions = [];
+            const subjects = periodsNeedingTimes.map(p => p.subject);
+            
+            commonTimes.forEach(common => {
+                const matchingSubjects = subjects.filter(subject => 
+                    common.subjects.some(pattern => 
+                        subject.toLowerCase().includes(pattern.toLowerCase())
+                    )
+                );
+                
+                if (matchingSubjects.length > 0) {
+                    suggestions.push({
+                        time: common.time,
+                        subjects: matchingSubjects
+                    });
+                }
+            });
+            
+            return suggestions;
+        }
+
         function getUniqueSubjects(periodsNeedingTimes) {
             const subjects = new Set();
             periodsNeedingTimes.forEach(period => {
@@ -1441,63 +1497,102 @@
         }
 
         function showTimeInputModal(periodsNeedingTimes) {
-            // Create modal HTML
+            // Analyze patterns and create smart suggestions
+            const patterns = analyzeTimePatterns(periodsNeedingTimes);
+            const suggestions = generateSmartSuggestions(periodsNeedingTimes);
+            
+            // Create modal HTML with progressive disclosure
             const modalHTML = `
                 <div class="modal-overlay" id="timeInputModal">
-                    <div class="modal-content">
+                    <div class="modal-content" style="max-width: 900px; width: 95%;">
                         <div class="modal-header">
-                            <h2>⏰ Missing Time Information</h2>
-                            <p>Some periods don't have start times. Please provide them below, or use our smart defaults.</p>
+                            <h2>⏰ Smart Time Assignment</h2>
+                            <p>We've analyzed your schedule and found ${periodsNeedingTimes.length} periods needing times. Let's make this quick!</p>
                         </div>
                         
-                        <div id="timeInputFields">
-                            ${periodsNeedingTimes.map((periodInfo, index) => `
-                                <div class="time-input-group">
-                                    <label class="time-input-label">
-                                        ${periodInfo.day} - ${periodInfo.period}
-                                    </label>
-                                    <div class="time-input-details">
-                                        Subject: ${periodInfo.subject}
-                                    </div>
-                                    <input type="text" 
-                                           class="time-input-field" 
-                                           id="timeInput${index}"
-                                           placeholder="8:15 AM"
-                                           data-index="${index}"
-                                           data-subject="${periodInfo.subject}">
-                                    <div class="time-hint">Example: 8:15 AM, 1:53 PM, or 13:53 (any format works!)</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        
-                        <div class="bulk-time-section" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
-                            <h4 style="margin: 0 0 10px 0; color: #495057;">🕐 Bulk Time Assignment (Optional)</h4>
-                            <p style="margin: 0 0 15px 0; color: #6c757d; font-size: 14px;">
-                                If all instances of a class should have the same time, enter it once below:
-                            </p>
-                            <div id="bulkTimeFields">
-                                ${getUniqueSubjects(periodsNeedingTimes).map(subject => `
-                                    <div class="bulk-time-group" style="margin-bottom: 10px;">
-                                        <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #495057;">
-                                            ${subject}
-                                        </label>
-                                        <input type="text" 
-                                               class="bulk-time-input" 
-                                               id="bulkTime_${subject.replace(/[^a-zA-Z0-9]/g, '_')}" 
-                                               placeholder="e.g., 8:23 AM"
-                                               data-subject="${subject}"
-                                               style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                        <!-- Step 1: Pattern Recognition -->
+                        <div class="pattern-section" style="margin-bottom: 30px;">
+                            <h3 style="margin: 0 0 15px 0; color: #495057; font-size: 18px;">🎯 Detected Patterns</h3>
+                            <div class="pattern-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                                ${patterns.map(pattern => `
+                                    <div class="pattern-card" style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 15px;">
+                                        <div style="font-weight: 600; color: #495057; margin-bottom: 8px;">
+                                            ${pattern.subject} (${pattern.count} periods)
+                                        </div>
+                                        <div style="font-size: 14px; color: #6c757d; margin-bottom: 10px;">
+                                            ${pattern.days.join(', ')}
+                                        </div>
+                                        <div style="display: flex; gap: 8px; align-items: center;">
+                                            <input type="text" 
+                                                   class="pattern-time-input" 
+                                                   id="pattern_${pattern.subject.replace(/[^a-zA-Z0-9]/g, '_')}" 
+                                                   placeholder="e.g., 8:23 AM"
+                                                   data-subject="${pattern.subject}"
+                                                   style="flex: 1; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;">
+                                            <button class="pattern-apply-btn" 
+                                                    onclick="applyPatternTime('${pattern.subject}')"
+                                                    style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                                                Apply
+                                            </button>
+                                        </div>
                                     </div>
                                 `).join('')}
                             </div>
                         </div>
                         
-                        <div class="modal-buttons">
-                            <button class="modal-btn modal-btn-secondary" onclick="useDefaultTimes()">
-                                Use Smart Defaults
+                        <!-- Step 2: Smart Suggestions -->
+                        <div class="suggestions-section" style="margin-bottom: 30px;">
+                            <h3 style="margin: 0 0 15px 0; color: #495057; font-size: 18px;">💡 Smart Suggestions</h3>
+                            <div class="suggestions-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                                ${suggestions.map(suggestion => `
+                                    <button class="suggestion-btn" 
+                                            onclick="applySuggestion('${suggestion.time}', '${suggestion.subjects.join(',')}')"
+                                            style="padding: 12px; background: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; color: #1976d2; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.2s;">
+                                        <div style="font-size: 16px; font-weight: 600;">${suggestion.time}</div>
+                                        <div style="font-size: 12px; margin-top: 4px;">${suggestion.subjects.join(', ')}</div>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Step 3: Individual Overrides (Collapsible) -->
+                        <div class="individual-section">
+                            <button class="toggle-individual-btn" 
+                                    onclick="toggleIndividualSection()"
+                                    style="width: 100%; padding: 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; text-align: left; cursor: pointer; margin-bottom: 15px;">
+                                <span style="font-weight: 500; color: #495057;">⚙️ Individual Overrides</span>
+                                <span id="toggle-icon" style="float: right;">▼</span>
                             </button>
-                            <button class="modal-btn modal-btn-primary" onclick="submitCustomTimes()">
-                                Apply Times
+                            <div id="individualFields" style="display: none;">
+                                <div class="individual-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                                    ${periodsNeedingTimes.map((periodInfo, index) => `
+                                        <div class="individual-input-group" style="background: #fff; border: 1px solid #e9ecef; border-radius: 6px; padding: 12px;">
+                                            <div style="font-weight: 600; color: #495057; margin-bottom: 4px;">
+                                                ${periodInfo.day} - ${periodInfo.period}
+                                            </div>
+                                            <div style="font-size: 14px; color: #6c757d; margin-bottom: 8px;">
+                                                ${periodInfo.subject}
+                                            </div>
+                                            <input type="text" 
+                                                   class="individual-time-input" 
+                                                   id="timeInput${index}"
+                                                   placeholder="8:15 AM"
+                                                   data-index="${index}"
+                                                   data-subject="${periodInfo.subject}"
+                                                   style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px;">
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="modal-buttons" style="margin-top: 25px; display: flex; gap: 12px; justify-content: flex-end;">
+                            <button class="modal-btn modal-btn-secondary" onclick="useDefaultTimes()" style="padding: 12px 20px;">
+                                🎯 Use Smart Defaults
+                            </button>
+                            <button class="modal-btn modal-btn-primary" onclick="submitCustomTimes()" style="padding: 12px 20px;">
+                                ✅ Apply All Times
                             </button>
                         </div>
                     </div>
@@ -1535,6 +1630,67 @@
             }, 100);
         }
 
+        function applyPatternTime(subject) {
+            const input = document.getElementById(`pattern_${subject.replace(/[^a-zA-Z0-9]/g, '_')}`);
+            const time = input.value.trim();
+            
+            if (!time) {
+                showMessage(`Please enter a time for ${subject}`, 'error');
+                return;
+            }
+            
+            if (!isValidTimeFormat(time)) {
+                showMessage(`Invalid time format for ${subject}. Use formats like "8:23 AM"`, 'error');
+                return;
+            }
+            
+            // Apply to all periods with this subject
+            const periodsNeedingTimes = window.currentPeriodsNeedingTimes;
+            periodsNeedingTimes.forEach((periodInfo, index) => {
+                if (periodInfo.subject === subject) {
+                    const individualInput = document.getElementById(`timeInput${index}`);
+                    if (individualInput) {
+                        individualInput.value = time;
+                        individualInput.style.background = '#e8f5e8';
+                    }
+                }
+            });
+            
+            showMessage(`✅ Applied ${time} to all ${subject} periods!`, 'success');
+        }
+
+        function applySuggestion(time, subjectsStr) {
+            const subjects = subjectsStr.split(',');
+            const periodsNeedingTimes = window.currentPeriodsNeedingTimes;
+            
+            subjects.forEach(subject => {
+                periodsNeedingTimes.forEach((periodInfo, index) => {
+                    if (periodInfo.subject === subject) {
+                        const individualInput = document.getElementById(`timeInput${index}`);
+                        if (individualInput) {
+                            individualInput.value = time;
+                            individualInput.style.background = '#e8f5e8';
+                        }
+                    }
+                });
+            });
+            
+            showMessage(`✅ Applied ${time} to ${subjects.length} subject types!`, 'success');
+        }
+
+        function toggleIndividualSection() {
+            const section = document.getElementById('individualFields');
+            const icon = document.getElementById('toggle-icon');
+            
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                icon.textContent = '▲';
+            } else {
+                section.style.display = 'none';
+                icon.textContent = '▼';
+            }
+        }
+
         function handleModalKeydown(e) {
             if (e.key === 'Escape') {
                 useDefaultTimes();
@@ -1546,39 +1702,23 @@
             const times = [];
             let hasErrors = false;
             
-            // First, collect bulk times
-            const bulkTimes = {};
-            const bulkInputs = document.querySelectorAll('.bulk-time-input');
-            bulkInputs.forEach(input => {
-                const subject = input.dataset.subject;
-                const value = input.value.trim();
-                if (value && isValidTimeFormat(value)) {
-                    bulkTimes[subject] = value;
-                }
-            });
-            
-            // Collect and validate times
+            // Collect and validate times from individual inputs
             for (let i = 0; i < periodsNeedingTimes.length; i++) {
                 const input = document.getElementById(`timeInput${i}`);
-                const value = input.value.trim();
-                const subject = input.dataset.subject;
+                const value = input ? input.value.trim() : '';
                 
-                // Check if there's a bulk time for this subject
-                if (!value && bulkTimes[subject]) {
-                    times.push(bulkTimes[subject]);
-                    input.classList.remove('error');
-                } else if (value) {
+                if (value) {
                     // Basic validation for time format
                     if (isValidTimeFormat(value)) {
                         times.push(value);
-                        input.classList.remove('error');
+                        if (input) input.classList.remove('error');
                     } else {
-                        input.classList.add('error');
+                        if (input) input.classList.add('error');
                         hasErrors = true;
                     }
                 } else {
                     times.push(null); // Empty = use default
-                    input.classList.remove('error');
+                    if (input) input.classList.remove('error');
                 }
             }
             

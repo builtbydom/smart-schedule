@@ -957,16 +957,21 @@
 
         function extractPeriodTime(periodStr) {
             // Extract time from period string like "Period 08:23" or "Period HR"
-            const match = periodStr.match(/Period\s+(\d{1,2}):(\d{2})/);
-            if (match) {
-                const [, hours, minutes] = match;
+            const timeMatch = periodStr.match(/Period\s+(\d{1,2}):(\d{2})/);
+            if (timeMatch) {
+                const [, hours, minutes] = timeMatch;
                 const totalMinutes = parseInt(hours) * 60 + parseInt(minutes);
                 return minutesToTimeString(totalMinutes);
             }
+            
+            // Handle special periods like "Period HR" - return null to trigger user input
             return null;
         }
 
         function calculateMissingTimes() {
+            // Track periods that need user input for times
+            const periodsNeedingTimes = [];
+            
             // Calculate time ranges for periods that don't have explicit times
             Object.keys(scheduleData).forEach(dayKey => {
                 const daySchedule = scheduleData[dayKey];
@@ -999,6 +1004,14 @@
                             
                             period.time = `${startTime} - ${endTime}`;
                             console.log(`Calculated time for ${period.subject}: ${period.time}`);
+                        } else {
+                            // Can't extract time from period name, need user input
+                            periodsNeedingTimes.push({
+                                day: dayKey,
+                                period: period.period,
+                                subject: period.subject,
+                                index: i
+                            });
                         }
                         
                         // Remove the flag
@@ -1006,6 +1019,102 @@
                     }
                 }
             });
+            
+            // Prompt user for missing times
+            if (periodsNeedingTimes.length > 0) {
+                promptForMissingTimes(periodsNeedingTimes);
+            }
+        }
+
+        function promptForMissingTimes(periodsNeedingTimes) {
+            let message = `Some periods don't have time information. Please provide the start times:\n\n`;
+            
+            periodsNeedingTimes.forEach((periodInfo, index) => {
+                message += `${index + 1}. ${periodInfo.day} - ${periodInfo.period} (${periodInfo.subject})\n`;
+            });
+            
+            message += `\nFormat: 8:10 AM (one time per line)\nClick OK to enter times, or Cancel to use default times.`;
+            
+            if (confirm(message)) {
+                collectMissingTimes(periodsNeedingTimes);
+            } else {
+                // Use default times for periods that couldn't be calculated
+                assignDefaultTimes(periodsNeedingTimes);
+            }
+        }
+
+        function collectMissingTimes(periodsNeedingTimes) {
+            const times = [];
+            
+            for (let i = 0; i < periodsNeedingTimes.length; i++) {
+                const periodInfo = periodsNeedingTimes[i];
+                const timeInput = prompt(
+                    `Enter start time for:\n${periodInfo.day} - ${periodInfo.period} (${periodInfo.subject})\n\nFormat: 8:10 AM`
+                );
+                
+                if (timeInput && timeInput.trim()) {
+                    times.push(timeInput.trim());
+                } else {
+                    times.push(null); // User skipped
+                }
+            }
+            
+            // Apply the collected times
+            applyUserProvidedTimes(periodsNeedingTimes, times);
+        }
+
+        function applyUserProvidedTimes(periodsNeedingTimes, times) {
+            periodsNeedingTimes.forEach((periodInfo, index) => {
+                const userTime = times[index];
+                const daySchedule = scheduleData[periodInfo.day];
+                const period = daySchedule[periodInfo.index];
+                
+                if (userTime) {
+                    // Use user-provided time
+                    const startMinutes = parseTime(userTime);
+                    const endMinutes = startMinutes + 57; // Default 57-minute duration
+                    const endTime = minutesToTimeString(endMinutes);
+                    period.time = `${userTime} - ${endTime}`;
+                    console.log(`User provided time for ${period.subject}: ${period.time}`);
+                } else {
+                    // Use a reasonable default based on position
+                    assignDefaultTime(period, periodInfo.index);
+                }
+            });
+            
+            // Refresh the display with updated times
+            displaySchedule();
+        }
+
+        function assignDefaultTimes(periodsNeedingTimes) {
+            periodsNeedingTimes.forEach(periodInfo => {
+                const daySchedule = scheduleData[periodInfo.day];
+                const period = daySchedule[periodInfo.index];
+                assignDefaultTime(period, periodInfo.index);
+            });
+        }
+
+        function assignDefaultTime(period, index) {
+            // Assign reasonable default times based on period position
+            const defaultStartTimes = [
+                "7:45 AM", // Period 0 (HR)
+                "8:23 AM", // Period 1
+                "9:20 AM", // Period 2
+                "10:23 AM", // Period 3
+                "11:23 AM", // Period 4
+                "12:23 PM", // Period 5
+                "1:23 PM",  // Period 6
+                "2:23 PM",  // Period 7
+                "3:23 PM"   // Period 8
+            ];
+            
+            const startTime = defaultStartTimes[index] || defaultStartTimes[defaultStartTimes.length - 1];
+            const startMinutes = parseTime(startTime);
+            const endMinutes = startMinutes + 57;
+            const endTime = minutesToTimeString(endMinutes);
+            
+            period.time = `${startTime} - ${endTime}`;
+            console.log(`Default time assigned for ${period.subject}: ${period.time}`);
         }
 
         function showMessage(message, type = 'success') {
@@ -1088,7 +1197,11 @@
             }
 
             try {
-                const lines = input.split('\n').map(line => line.trim()).filter(line => line);
+                // Clean input: remove empty lines and extra whitespace
+                const lines = input.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0); // Remove empty lines
+                
                 scheduleData = {};
                 studentInfo = {};
                 

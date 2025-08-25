@@ -1817,11 +1817,12 @@
                             if (currentPeriod.subject.length > 0) {
                                 scheduleData[currentDay].push(currentPeriod);
                                 
-                                // Debug logging for homeroom periods
-                                if (currentPeriod.subject.toLowerCase().includes('homeroom') || 
-                                    currentPeriod.subject.toLowerCase().includes('hr')) {
-                                    console.log(`Added homeroom period: ${currentDay} - ${currentPeriod.subject} - ${currentPeriod.time}`);
-                                }
+                                                            // Debug logging for homeroom periods
+                            if (currentPeriod.subject.toLowerCase().includes('homeroom') || 
+                                currentPeriod.subject.toLowerCase().includes('hr')) {
+                                console.log(`Added homeroom period: ${currentDay} - ${currentPeriod.subject} - ${currentPeriod.time}`);
+                                console.log(`Homeroom period details:`, currentPeriod);
+                            }
                             }
                         }
                     }
@@ -1859,6 +1860,18 @@
                     }
                 });
 
+                // Debug: Log all homeroom periods in scheduleData
+                console.log('=== SCHEDULE DATA DEBUG ===');
+                Object.keys(scheduleData).forEach(day => {
+                    const homeroomPeriods = scheduleData[day].filter(p => 
+                        p.subject && (p.subject.toLowerCase().includes('homeroom') || p.subject.toLowerCase().includes('hr'))
+                    );
+                    if (homeroomPeriods.length > 0) {
+                        console.log(`${day} homeroom periods:`, homeroomPeriods);
+                    }
+                });
+                console.log('=== END SCHEDULE DATA DEBUG ===');
+                
                 displaySchedule();
                 saveState(); // Save the schedule data
                 populateSubjectFilter(); // Populate the filter dropdown
@@ -1913,6 +1926,12 @@
             const allTimes = new Set();
             Object.values(scheduleData).forEach(daySchedule => {
                 daySchedule.forEach(period => {
+                    // Debug homeroom periods during display
+                    if (period.subject && (period.subject.toLowerCase().includes('homeroom') || 
+                        period.subject.toLowerCase().includes('hr'))) {
+                        console.log(`Display check - Homeroom: ${period.subject} - ${period.time} - Valid: ${period.time && period.time.includes('-') && period.subject.trim().length > 0}`);
+                    }
+                    
                     // Only include periods with valid time data AND meaningful content
                     if (period.time && 
                         period.time.includes('-') && 

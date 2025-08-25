@@ -943,6 +943,71 @@
             return hour24 * 60 + minutes;
         }
 
+        function minutesToTimeString(minutes) {
+            // Convert minutes since midnight back to time string
+            let hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            const period = hours >= 12 ? 'PM' : 'AM';
+            
+            if (hours > 12) hours -= 12;
+            if (hours === 0) hours = 12;
+            
+            return `${hours}:${mins.toString().padStart(2, '0')} ${period}`;
+        }
+
+        function extractPeriodTime(periodStr) {
+            // Extract time from period string like "Period 08:23" or "Period HR"
+            const match = periodStr.match(/Period\s+(\d{1,2}):(\d{2})/);
+            if (match) {
+                const [, hours, minutes] = match;
+                const totalMinutes = parseInt(hours) * 60 + parseInt(minutes);
+                return minutesToTimeString(totalMinutes);
+            }
+            return null;
+        }
+
+        function calculateMissingTimes() {
+            // Calculate time ranges for periods that don't have explicit times
+            Object.keys(scheduleData).forEach(dayKey => {
+                const daySchedule = scheduleData[dayKey];
+                
+                for (let i = 0; i < daySchedule.length; i++) {
+                    const period = daySchedule[i];
+                    
+                    if (period.needsTimeCalculation) {
+                        const startTime = extractPeriodTime(period.period);
+                        
+                        if (startTime) {
+                            let endTime = null;
+                            
+                            // Find the next period's start time
+                            for (let j = i + 1; j < daySchedule.length; j++) {
+                                const nextPeriod = daySchedule[j];
+                                const nextStartTime = extractPeriodTime(nextPeriod.period);
+                                if (nextStartTime) {
+                                    endTime = nextStartTime;
+                                    break;
+                                }
+                            }
+                            
+                            // If no next period found, assume 57-minute class duration (typical)
+                            if (!endTime) {
+                                const startMinutes = parseTime(startTime);
+                                const endMinutes = startMinutes + 57; // Default class length
+                                endTime = minutesToTimeString(endMinutes);
+                            }
+                            
+                            period.time = `${startTime} - ${endTime}`;
+                            console.log(`Calculated time for ${period.subject}: ${period.time}`);
+                        }
+                        
+                        // Remove the flag
+                        delete period.needsTimeCalculation;
+                    }
+                }
+            });
+        }
+
         function showMessage(message, type = 'success') {
             const messageArea = document.getElementById('messageArea');
             const className = type === 'error' ? 'error-message' : 'success-message';
@@ -1066,10 +1131,19 @@
                             currentPeriod.subject = lines[i];
                         }
                         
-                        // Get time (next line)
+                        // Check if next line is a time range or teacher info
+                        let hasExplicitTime = false;
                         if (i + 1 < lines.length) {
-                            i++;
-                            currentPeriod.time = lines[i];
+                            const nextLine = lines[i + 1];
+                            // Check if it's a time range (contains AM/PM and -)
+                            if (nextLine.includes('AM') || nextLine.includes('PM')) {
+                                if (nextLine.includes('-')) {
+                                    // Format 1: Has explicit time range
+                                    i++;
+                                    currentPeriod.time = lines[i];
+                                    hasExplicitTime = true;
+                                }
+                            }
                         }
                         
                         // Get teacher and room
@@ -1087,12 +1161,20 @@
                             }
                         }
                         
+                        // If no explicit time was found, we'll calculate it later
+                        if (!hasExplicitTime) {
+                            currentPeriod.needsTimeCalculation = true;
+                        }
+                        
                         if (currentDay && currentPeriod) {
                             scheduleData[currentDay].push(currentPeriod);
                         }
                     }
                     i++;
                 }
+
+                // Calculate missing time ranges for Format 2
+                calculateMissingTimes();
 
                 displaySchedule();
                 saveState(); // Save the schedule data

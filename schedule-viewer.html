@@ -1150,27 +1150,56 @@
 
         function normalizeTimeRange(timeRangeStr) {
             // Normalize time ranges like "01:53 - 02:50" to "1:53 PM - 2:50 PM"
+            // Also fix incorrect AM/PM like "1:53 AM - 2:50 AM" during school hours
             if (!timeRangeStr || !timeRangeStr.includes('-')) {
                 return timeRangeStr;
             }
             
-            // If it already has AM/PM, return as-is
-            if (timeRangeStr.includes('AM') || timeRangeStr.includes('PM')) {
-                return timeRangeStr;
+            // Split the time range
+            const [startTimeStr, endTimeStr] = timeRangeStr.split('-').map(t => t.trim());
+            
+            // Check if this looks like a school schedule time that's incorrectly marked as AM
+            const isIncorrectAM = (timeStr) => {
+                if (!timeStr.includes('AM')) return false;
+                
+                // Extract the hour from times like "1:53 AM" or "2:50 AM"
+                const hourMatch = timeStr.match(/^(\d{1,2}):/);
+                if (hourMatch) {
+                    const hour = parseInt(hourMatch[1]);
+                    // Times like 1:XX AM, 2:XX AM, 3:XX AM during school day should be PM
+                    return hour >= 1 && hour <= 6;
+                }
+                return false;
+            };
+            
+            let startTime = startTimeStr;
+            let endTime = endTimeStr;
+            
+            // Fix incorrect AM designations for school schedule context
+            if (isIncorrectAM(startTime)) {
+                console.log(`Fixing incorrect AM time: ${startTime} → ${startTime.replace('AM', 'PM')}`);
+                startTime = startTime.replace('AM', 'PM');
+            }
+            if (isIncorrectAM(endTime)) {
+                console.log(`Fixing incorrect AM time: ${endTime} → ${endTime.replace('AM', 'PM')}`);
+                endTime = endTime.replace('AM', 'PM');
             }
             
-            // Split the time range
-            const [startTime, endTime] = timeRangeStr.split('-').map(t => t.trim());
+            // If still no AM/PM indicators, apply smart parsing
+            if (!startTime.includes('AM') && !startTime.includes('PM')) {
+                const startMinutes = parseTime(startTime);
+                startTime = minutesToTimeString(startMinutes);
+            }
+            if (!endTime.includes('AM') && !endTime.includes('PM')) {
+                const endMinutes = parseTime(endTime);
+                endTime = minutesToTimeString(endMinutes);
+            }
             
-            // Parse and convert each time
-            const startMinutes = parseTime(startTime);
-            const endMinutes = parseTime(endTime);
-            
-            // Convert back to readable format
-            const normalizedStart = minutesToTimeString(startMinutes);
-            const normalizedEnd = minutesToTimeString(endMinutes);
-            
-            return `${normalizedStart} - ${normalizedEnd}`;
+            const result = `${startTime} - ${endTime}`;
+            if (timeRangeStr !== result) {
+                console.log(`Time range normalized: "${timeRangeStr}" → "${result}"`);
+            }
+            return result;
         }
 
         function extractPeriodTime(periodStr) {

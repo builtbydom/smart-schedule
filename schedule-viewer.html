@@ -1430,6 +1430,16 @@
             showTimeInputModal(periodsNeedingTimes);
         }
 
+        function getUniqueSubjects(periodsNeedingTimes) {
+            const subjects = new Set();
+            periodsNeedingTimes.forEach(period => {
+                if (period.subject) {
+                    subjects.add(period.subject);
+                }
+            });
+            return Array.from(subjects);
+        }
+
         function showTimeInputModal(periodsNeedingTimes) {
             // Create modal HTML
             const modalHTML = `
@@ -1453,10 +1463,33 @@
                                            class="time-input-field" 
                                            id="timeInput${index}"
                                            placeholder="8:15 AM"
-                                           data-index="${index}">
+                                           data-index="${index}"
+                                           data-subject="${periodInfo.subject}">
                                     <div class="time-hint">Example: 8:15 AM, 1:53 PM, or 13:53 (any format works!)</div>
                                 </div>
                             `).join('')}
+                        </div>
+                        
+                        <div class="bulk-time-section" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+                            <h4 style="margin: 0 0 10px 0; color: #495057;">🕐 Bulk Time Assignment (Optional)</h4>
+                            <p style="margin: 0 0 15px 0; color: #6c757d; font-size: 14px;">
+                                If all instances of a class should have the same time, enter it once below:
+                            </p>
+                            <div id="bulkTimeFields">
+                                ${getUniqueSubjects(periodsNeedingTimes).map(subject => `
+                                    <div class="bulk-time-group" style="margin-bottom: 10px;">
+                                        <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #495057;">
+                                            ${subject}
+                                        </label>
+                                        <input type="text" 
+                                               class="bulk-time-input" 
+                                               id="bulkTime_${subject.replace(/[^a-zA-Z0-9]/g, '_')}" 
+                                               placeholder="e.g., 8:23 AM"
+                                               data-subject="${subject}"
+                                               style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
                         
                         <div class="modal-buttons">
@@ -1513,12 +1546,28 @@
             const times = [];
             let hasErrors = false;
             
+            // First, collect bulk times
+            const bulkTimes = {};
+            const bulkInputs = document.querySelectorAll('.bulk-time-input');
+            bulkInputs.forEach(input => {
+                const subject = input.dataset.subject;
+                const value = input.value.trim();
+                if (value && isValidTimeFormat(value)) {
+                    bulkTimes[subject] = value;
+                }
+            });
+            
             // Collect and validate times
             for (let i = 0; i < periodsNeedingTimes.length; i++) {
                 const input = document.getElementById(`timeInput${i}`);
                 const value = input.value.trim();
+                const subject = input.dataset.subject;
                 
-                if (value) {
+                // Check if there's a bulk time for this subject
+                if (!value && bulkTimes[subject]) {
+                    times.push(bulkTimes[subject]);
+                    input.classList.remove('error');
+                } else if (value) {
                     // Basic validation for time format
                     if (isValidTimeFormat(value)) {
                         times.push(value);
@@ -1747,6 +1796,17 @@
                             room: ''
                         };
                         
+                        // Special handling for Period HR - check for time before subject
+                        if (line === 'Period HR' && i + 1 < lines.length) {
+                            const nextLine = lines[i + 1];
+                            // Check if next line contains a time range
+                            if (nextLine.includes('-') && (nextLine.includes('AM') || nextLine.includes('PM'))) {
+                                currentPeriod.time = normalizeTimeRange(nextLine);
+                                console.log(`Found HR time before subject: ${currentPeriod.time}`);
+                                i++; // Skip the time line
+                            }
+                        }
+                        
                         // Get subject (next line)
                         if (i + 1 < lines.length) {
                             i++;
@@ -1775,6 +1835,7 @@
                                     // Normalize the time range to handle ambiguous formats
                                     currentPeriod.time = normalizeTimeRange(lookAheadLine);
                                     hasExplicitTime = true;
+                                    console.log(`Found explicit time for ${currentPeriod.subject}: ${currentPeriod.time}`);
                                 }
                             }
                             

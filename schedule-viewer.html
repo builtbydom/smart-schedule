@@ -195,6 +195,10 @@
             background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
         }
 
+        .export-btn {
+            background: linear-gradient(135deg, #3498db 0%, #74b9ff 100%);
+        }
+
         .clear-btn {
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
         }
@@ -997,8 +1001,6 @@
                 <div class="button-group">
                     <button onclick="parseSchedule()">📊 Create Schedule Table</button>
                     <button onclick="loadSampleData()">📝 Load Sample Data</button>
-                    <button class="print-btn" onclick="printSchedule()" id="printBtn" style="display: none;">🖨️ Print</button>
-                    <button onclick="exportToJson()" id="exportBtn" style="display: none;">📄 Export JSON</button>
                     <button class="clear-btn" onclick="clearAll()">🗑️ Clear</button>
                 </div>
             </div>
@@ -1009,6 +1011,7 @@
                 
                 <div class="button-group">
                     <button class="print-btn" onclick="printSchedule()">🖨️ Print Schedule</button>
+                    <button class="export-btn" onclick="exportToJson()">📄 Export JSON</button>
                     <button onclick="showActivitySection()" style="background: linear-gradient(135deg, #ff9500 0%, #ffad33 100%);">⚽ Add Activities</button>
                     <button onclick="showImportSection()">📝 Upload New</button>
                     <button class="clear-btn" onclick="clearAll()">🗑️ Clear All</button>
@@ -2584,11 +2587,6 @@ Room: B112`;
             document.getElementById('importSection').style.display = 'none';
             document.getElementById('scheduleLoadedSection').style.display = 'block';
             document.getElementById('filterInline').style.display = 'flex';
-            
-            // Show print and export buttons when schedule is loaded
-            document.getElementById('printBtn').style.display = 'inline-block';
-            document.getElementById('exportBtn').style.display = 'inline-block';
-            
             updateScheduleInfo();
         }
 
@@ -2596,11 +2594,6 @@ Room: B112`;
             document.getElementById('importSection').style.display = 'block';
             document.getElementById('scheduleLoadedSection').style.display = 'none';
             document.getElementById('filterInline').style.display = 'none';
-            
-            // Hide print and export buttons when no schedule is loaded
-            document.getElementById('printBtn').style.display = 'none';
-            document.getElementById('exportBtn').style.display = 'none';
-            
             // Clear the textarea for new input
             document.getElementById('scheduleInput').value = '';
         }

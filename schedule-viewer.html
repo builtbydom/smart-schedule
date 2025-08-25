@@ -1804,7 +1804,7 @@
                         
                         // Special handling for Period HR - check for time after subject
                         if (line === 'Period HR') {
-                            console.log(`Found Period HR, will look for time after subject`);
+                            console.log(`🔍 Found Period HR, will look for time after subject`);
                         }
                         
                         // Get subject (next line)
@@ -1823,8 +1823,8 @@
                             const lookAheadLine = lines[lookAheadIndex];
                             
                             // Debug for homeroom periods
-                            if (currentPeriod.subject && currentPeriod.subject.toLowerCase().includes('homeroom')) {
-                                console.log(`Looking at line ${lookAheadIndex}: "${lookAheadLine}"`);
+                            if (currentPeriod.period === 'Period HR') {
+                                console.log(`🔍 HR: Looking at line ${lookAheadIndex}: "${lookAheadLine}"`);
                             }
                             
                             // Stop if we hit another period or day
@@ -1840,8 +1840,8 @@
                                     (lookAheadLine.includes('AM') || lookAheadLine.includes('PM'));
                                 
                                 // Debug for homeroom periods
-                                if (currentPeriod.subject && currentPeriod.subject.toLowerCase().includes('homeroom')) {
-                                    console.log(`Time check for "${lookAheadLine}": pattern=${timeRangePattern.test(lookAheadLine)}, hasAMPM=${lookAheadLine.includes('AM') || lookAheadLine.includes('PM')}, isTimeRange=${isTimeRange}`);
+                                if (currentPeriod.period === 'Period HR') {
+                                    console.log(`🔍 HR: Time check for "${lookAheadLine}": pattern=${timeRangePattern.test(lookAheadLine)}, hasAMPM=${lookAheadLine.includes('AM') || lookAheadLine.includes('PM')}, isTimeRange=${isTimeRange}`);
                                 }
                                 
                                 if (isTimeRange) {
@@ -1851,7 +1851,7 @@
                                     console.log(`Found explicit time for ${currentPeriod.subject}: ${currentPeriod.time}`);
                                     
                                     // Special debug for homeroom
-                                    if (currentPeriod.subject && currentPeriod.subject.toLowerCase().includes('homeroom')) {
+                                    if (currentPeriod.period === 'Period HR') {
                                         console.log(`🎯 HOMEROOM TIME FOUND: ${currentPeriod.time}`);
                                     }
                                 }
@@ -1896,7 +1896,10 @@
                             if (currentPeriod.subject.length > 0) {
                                 scheduleData[currentDay].push(currentPeriod);
                                 
-                                                            // Debug logging for homeroom periods
+                                // Debug logging for homeroom periods
+                                if (currentPeriod.period === 'Period HR') {
+                                    console.log(`✅ HR PERIOD ADDED: ${currentDay} - ${currentPeriod.subject} - Time: "${currentPeriod.time}"`);
+                                }
                             if (currentPeriod.subject.toLowerCase().includes('homeroom') || 
                                 currentPeriod.subject.toLowerCase().includes('hr')) {
                                 console.log(`Added homeroom period: ${currentDay} - ${currentPeriod.subject} - ${currentPeriod.time}`);
@@ -1925,10 +1928,10 @@
                         if (!isValid) {
                             console.log(`Removing invalid period from ${day}:`, period);
                             // Special debug for homeroom periods
-                            if (period.subject && (period.subject.toLowerCase().includes('homeroom') || 
-                                period.subject.toLowerCase().includes('hr'))) {
-                                console.log(`⚠️ HOMEROOM REMOVED: ${day} - ${period.subject} - ${period.time}`);
-                                console.log(`Reason: time=${period.time}, subject=${period.subject}`);
+                            if (period.period === 'Period HR') {
+                                console.log(`⚠️ HOMEROOM REMOVED: ${day} - ${period.subject} - Time: "${period.time}"`);
+                                console.log(`⚠️ Reason: time="${period.time}", subject="${period.subject}", period="${period.period}"`);
+                                console.log(`⚠️ Validation: time exists=${!!period.time}, time has dash=${period.time && period.time.includes('-')}, subject valid=${period.subject && period.subject.trim().length > 0}`);
                             }
                         }
                         return isValid;

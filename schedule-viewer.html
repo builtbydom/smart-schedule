@@ -1076,18 +1076,64 @@
         let activities = [];
 
         function parseTime(timeStr) {
-            // Convert time string like "8:10 AM" or "1:53 PM" to minutes since midnight
-            const [time, period] = timeStr.trim().split(' ');
-            const [hours, minutes] = time.split(':').map(Number);
+            // Convert time string to minutes since midnight
+            // Handles: "8:10 AM", "1:53 PM", "13:53", "01:53" (ambiguous format)
+            const trimmed = timeStr.trim();
             
-            let hour24 = hours;
-            if (period.toUpperCase() === 'PM' && hours !== 12) {
-                hour24 += 12;
-            } else if (period.toUpperCase() === 'AM' && hours === 12) {
-                hour24 = 0;
+            // Check if it has AM/PM
+            if (trimmed.includes('AM') || trimmed.includes('PM')) {
+                const [time, period] = trimmed.split(' ');
+                const [hours, minutes] = time.split(':').map(Number);
+                
+                let hour24 = hours;
+                if (period.toUpperCase() === 'PM' && hours !== 12) {
+                    hour24 += 12;
+                } else if (period.toUpperCase() === 'AM' && hours === 12) {
+                    hour24 = 0;
+                }
+                
+                return hour24 * 60 + minutes;
             }
             
-            return hour24 * 60 + minutes;
+            // Handle 24-hour format or ambiguous format
+            const [hours, minutes] = trimmed.split(':').map(Number);
+            
+            // If it's clearly 24-hour format (> 12 hours), use as-is
+            if (hours > 12) {
+                return hours * 60 + minutes;
+            }
+            
+            // If it's 24-hour format in morning range (0-6), use as-is
+            if (hours >= 0 && hours <= 6) {
+                return hours * 60 + minutes;
+            }
+            
+            // For ambiguous times (1-12), apply school schedule logic
+            return smartTimeConversion(hours, minutes);
+        }
+
+        function smartTimeConversion(hours, minutes) {
+            // Intelligently convert ambiguous times based on school schedule patterns
+            // Schools typically run 7:00 AM - 8:00 PM (07:00 - 20:00)
+            
+            // Early morning times (7-11) are typically AM
+            if (hours >= 7 && hours <= 11) {
+                return hours * 60 + minutes;
+            }
+            
+            // 12 o'clock handling
+            if (hours === 12) {
+                // 12:XX during school hours is typically 12:XX PM (noon)
+                return 12 * 60 + minutes;
+            }
+            
+            // Afternoon times (1-6) during school hours should be PM
+            if (hours >= 1 && hours <= 6) {
+                return (hours + 12) * 60 + minutes;
+            }
+            
+            // Default fallback - if unclear, assume PM for school context
+            return (hours + 12) * 60 + minutes;
         }
 
         function minutesToTimeString(minutes) {
@@ -1102,12 +1148,40 @@
             return `${hours}:${mins.toString().padStart(2, '0')} ${period}`;
         }
 
+        function normalizeTimeRange(timeRangeStr) {
+            // Normalize time ranges like "01:53 - 02:50" to "1:53 PM - 2:50 PM"
+            if (!timeRangeStr || !timeRangeStr.includes('-')) {
+                return timeRangeStr;
+            }
+            
+            // If it already has AM/PM, return as-is
+            if (timeRangeStr.includes('AM') || timeRangeStr.includes('PM')) {
+                return timeRangeStr;
+            }
+            
+            // Split the time range
+            const [startTime, endTime] = timeRangeStr.split('-').map(t => t.trim());
+            
+            // Parse and convert each time
+            const startMinutes = parseTime(startTime);
+            const endMinutes = parseTime(endTime);
+            
+            // Convert back to readable format
+            const normalizedStart = minutesToTimeString(startMinutes);
+            const normalizedEnd = minutesToTimeString(endMinutes);
+            
+            return `${normalizedStart} - ${normalizedEnd}`;
+        }
+
         function extractPeriodTime(periodStr) {
-            // Extract time from period string like "Period 08:23" or "Period HR"
+            // Extract time from period string like "Period 08:23", "Period 1:53", or "Period HR"
             const timeMatch = periodStr.match(/Period\s+(\d{1,2}):(\d{2})/);
             if (timeMatch) {
                 const [, hours, minutes] = timeMatch;
-                const totalMinutes = parseInt(hours) * 60 + parseInt(minutes);
+                
+                // Use smart time conversion for ambiguous formats
+                const timeString = `${hours}:${minutes}`;
+                const totalMinutes = parseTime(timeString);
                 return minutesToTimeString(totalMinutes);
             }
             
@@ -1201,7 +1275,7 @@
                                            id="timeInput${index}"
                                            placeholder="8:15 AM"
                                            data-index="${index}">
-                                    <div class="time-hint">Example: 7:45 AM, 8:23 AM, 12:30 PM</div>
+                                    <div class="time-hint">Example: 8:15 AM, 1:53 PM, or 13:53 (any format works!)</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -1281,7 +1355,7 @@
             }
             
             if (hasErrors) {
-                showMessage('Please check the highlighted time formats. Use format like "8:15 AM" or "12:30 PM".', 'error');
+                showMessage('Please check the highlighted time formats. Use formats like "8:15 AM", "1:53 PM", or "13:53".', 'error');
                 return;
             }
             
@@ -1308,9 +1382,14 @@
         }
 
         function isValidTimeFormat(timeStr) {
-            // Check for basic time format: H:MM AM/PM or HH:MM AM/PM
-            const timePattern = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
-            return timePattern.test(timeStr.trim());
+            // Check for various time formats:
+            // - H:MM AM/PM or HH:MM AM/PM (12-hour with AM/PM)
+            // - H:MM or HH:MM (ambiguous/24-hour format - will be auto-converted)
+            const timePattern12Hour = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
+            const timePatternAmbiguous = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+            
+            const trimmed = timeStr.trim();
+            return timePattern12Hour.test(trimmed) || timePatternAmbiguous.test(trimmed);
         }
 
         function applyUserProvidedTimes(periodsNeedingTimes, times) {
@@ -1320,11 +1399,12 @@
                 const period = daySchedule[periodInfo.index];
                 
                 if (userTime) {
-                    // Use user-provided time
+                    // Use user-provided time (normalize it to handle ambiguous formats)
                     const startMinutes = parseTime(userTime);
                     const endMinutes = startMinutes + 57; // Default 57-minute duration
+                    const normalizedStartTime = minutesToTimeString(startMinutes);
                     const endTime = minutesToTimeString(endMinutes);
-                    period.time = `${userTime} - ${endTime}`;
+                    period.time = `${normalizedStartTime} - ${endTime}`;
                     console.log(`User provided time for ${period.subject}: ${period.time}`);
                 } else {
                     // Use a reasonable default based on position
@@ -1507,10 +1587,16 @@
                                 break;
                             }
                             
-                            // Check for time range
-                            if (!hasExplicitTime && (lookAheadLine.includes('AM') || lookAheadLine.includes('PM')) && lookAheadLine.includes('-')) {
-                                currentPeriod.time = lookAheadLine;
-                                hasExplicitTime = true;
+                            // Check for time range (explicit with AM/PM or ambiguous format)
+                            if (!hasExplicitTime && lookAheadLine.includes('-')) {
+                                // Check if it looks like a time range (contains colons and dash)
+                                const timeRangePattern = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/;
+                                if (timeRangePattern.test(lookAheadLine) || 
+                                    (lookAheadLine.includes('AM') || lookAheadLine.includes('PM'))) {
+                                    // Normalize the time range to handle ambiguous formats
+                                    currentPeriod.time = normalizeTimeRange(lookAheadLine);
+                                    hasExplicitTime = true;
+                                }
                             }
                             
                             // Check for teacher

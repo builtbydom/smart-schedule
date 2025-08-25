@@ -497,6 +497,146 @@
             font-style: italic;
         }
 
+        /* Editable class cells */
+        .class-cell {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .class-cell:hover {
+            background-color: rgba(52, 152, 219, 0.1) !important;
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .class-cell.editing {
+            background-color: rgba(52, 152, 219, 0.2) !important;
+            outline: 2px solid #3498db;
+        }
+
+        /* Edit class modal */
+        .edit-class-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .edit-class-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        .edit-class-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .edit-class-header h2 {
+            color: #2c3e50;
+            font-size: 1.6em;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .edit-class-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .edit-field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .edit-field-label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1em;
+        }
+
+        .edit-field-input {
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        .edit-field-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .edit-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .edit-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .edit-btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .edit-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(52, 152, 219, 0.3);
+        }
+
+        .edit-btn-secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 2px solid #e9ecef;
+        }
+
+        .edit-btn-secondary:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .edit-btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .edit-btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(231, 76, 60, 0.3);
+        }
+
         .student-info {
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
@@ -1827,7 +1967,12 @@
                     const bTeacher = bPeriod ? bPeriod.teacher : '';
                     const bRoom = bPeriod ? bPeriod.room : '';
                     
-                    const identical = (aSubject === bSubject && aTeacher === bTeacher && aRoom === bRoom);
+                    // More flexible comparison - consider periods identical if they're the same class
+                    // even if teacher/room details might be missing or slightly different
+                    const subjectsMatch = aSubject === bSubject;
+                    const bothEmpty = !aSubject && !bSubject;
+                    const identical = subjectsMatch || bothEmpty;
+                    
                     dayComparisons[dayName] = { identical, aPeriod, bPeriod };
                     
                     if (!identical) {
@@ -1866,7 +2011,10 @@
                         } else if (period) {
                             // Regular school period
                             const subjectClass = getSubjectClass(period.subject);
-                            html += `<td class="class-cell ${subjectClass}">
+                            const cellId = `cell-${dayName}-${time.replace(/[^a-zA-Z0-9]/g, '_')}-merged`;
+                            html += `<td class="class-cell ${subjectClass}" id="${cellId}" 
+                                        onclick="editClassCellFromMerged('${dayName}', '${time}')" 
+                                        title="Click to edit this class">
                                 <div class="class-name">${period.subject}</div>
                                 <div class="teacher-name">${period.teacher}</div>
                                 <div class="room-name">${period.room}</div>
@@ -1914,7 +2062,12 @@
                             </td>`;
                         } else if (aPeriod) {
                             const subjectClass = getSubjectClass(aPeriod.subject);
-                            html += `<td class="class-cell ${subjectClass}">
+                            const dayKey = `${dayName}. A`;
+                            const periodIndex = scheduleData[dayKey] ? scheduleData[dayKey].findIndex(p => p.time === time) : -1;
+                            const cellId = `cell-${dayName}-${time.replace(/[^a-zA-Z0-9]/g, '_')}-A`;
+                            html += `<td class="class-cell ${subjectClass}" id="${cellId}" 
+                                        onclick="editClassCellById('${dayKey}', ${periodIndex})" 
+                                        title="Click to edit this class (Schedule A)">
                                 <div class="class-name">${aPeriod.subject}</div>
                                 <div class="teacher-name">${aPeriod.teacher}</div>
                                 <div class="room-name">${aPeriod.room}</div>
@@ -1961,7 +2114,12 @@
                             </td>`;
                         } else if (bPeriod) {
                             const subjectClass = getSubjectClass(bPeriod.subject);
-                            html += `<td class="class-cell ${subjectClass}">
+                            const dayKey = `${dayName}. B`;
+                            const periodIndex = scheduleData[dayKey] ? scheduleData[dayKey].findIndex(p => p.time === time) : -1;
+                            const cellId = `cell-${dayName}-${time.replace(/[^a-zA-Z0-9]/g, '_')}-B`;
+                            html += `<td class="class-cell ${subjectClass}" id="${cellId}" 
+                                        onclick="editClassCellById('${dayKey}', ${periodIndex})" 
+                                        title="Click to edit this class (Schedule B)">
                                 <div class="class-name">${bPeriod.subject}</div>
                                 <div class="teacher-name">${bPeriod.teacher}</div>
                                 <div class="room-name">${bPeriod.room}</div>
@@ -2582,6 +2740,263 @@ Room: B112`;
             console.log('=== EXPORTED SCHEDULE DATA ===');
             console.log(exportData);
             console.log('=== END EXPORT DATA ===');
+        }
+
+        // Class Editing Functions
+        let currentEditingCell = null;
+
+        function makeClassCellEditable(cellElement, dayKey, periodIndex, scheduleType) {
+            cellElement.onclick = () => editClassCell(dayKey, periodIndex, scheduleType, cellElement);
+            cellElement.style.cursor = 'pointer';
+            cellElement.title = 'Click to edit this class';
+        }
+
+        function editClassCell(dayKey, periodIndex, scheduleType, cellElement) {
+            const daySchedule = scheduleData[dayKey];
+            if (!daySchedule || !daySchedule[periodIndex]) return;
+            
+            const period = daySchedule[periodIndex];
+            currentEditingCell = { dayKey, periodIndex, scheduleType, cellElement, period };
+            
+            // Add editing class to cell
+            cellElement.classList.add('editing');
+            
+            showEditClassModal(period, dayKey);
+        }
+
+        function showEditClassModal(period, dayKey) {
+            const modalHTML = `
+                <div class="edit-class-modal" id="editClassModal">
+                    <div class="edit-class-content">
+                        <div class="edit-class-header">
+                            <h2>✏️ Edit Class</h2>
+                            <p>Update the details for this class period</p>
+                        </div>
+                        
+                        <div class="edit-class-form">
+                            <div class="edit-field-group">
+                                <label class="edit-field-label">Subject/Class Name:</label>
+                                <input type="text" class="edit-field-input" id="editSubject" 
+                                       value="${period.subject || ''}" placeholder="e.g., Math 6, Science, Lunch">
+                            </div>
+                            
+                            <div class="edit-field-group">
+                                <label class="edit-field-label">Teacher:</label>
+                                <input type="text" class="edit-field-input" id="editTeacher" 
+                                       value="${period.teacher || ''}" placeholder="e.g., SMITH, John">
+                            </div>
+                            
+                            <div class="edit-field-group">
+                                <label class="edit-field-label">Room:</label>
+                                <input type="text" class="edit-field-input" id="editRoom" 
+                                       value="${period.room || ''}" placeholder="e.g., A123, GYM, CAFE">
+                            </div>
+                            
+                            <div class="edit-field-group">
+                                <label class="edit-field-label">Time Range:</label>
+                                <input type="text" class="edit-field-input" id="editTime" 
+                                       value="${period.time || ''}" placeholder="e.g., 8:15 AM - 9:10 AM">
+                            </div>
+                            
+                            <div class="edit-field-group">
+                                <label class="edit-field-label">Period:</label>
+                                <input type="text" class="edit-field-input" id="editPeriod" 
+                                       value="${period.period || ''}" placeholder="e.g., Period 08:23">
+                            </div>
+                        </div>
+                        
+                        <div class="edit-buttons">
+                            <button class="edit-btn edit-btn-danger" onclick="deleteClass()">
+                                🗑️ Delete
+                            </button>
+                            <button class="edit-btn edit-btn-secondary" onclick="cancelEditClass()">
+                                Cancel
+                            </button>
+                            <button class="edit-btn edit-btn-primary" onclick="saveEditClass()">
+                                💾 Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Focus first input
+            setTimeout(() => {
+                document.getElementById('editSubject').focus();
+            }, 100);
+            
+            // Add keyboard support
+            document.addEventListener('keydown', handleEditModalKeydown);
+        }
+
+        function handleEditModalKeydown(e) {
+            if (e.key === 'Escape') {
+                cancelEditClass();
+            } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                saveEditClass();
+            }
+        }
+
+        function saveEditClass() {
+            if (!currentEditingCell) return;
+            
+            const subject = document.getElementById('editSubject').value.trim();
+            const teacher = document.getElementById('editTeacher').value.trim();
+            const room = document.getElementById('editRoom').value.trim();
+            const time = document.getElementById('editTime').value.trim();
+            const period = document.getElementById('editPeriod').value.trim();
+            
+            // Update the period data
+            const { dayKey, periodIndex } = currentEditingCell;
+            const daySchedule = scheduleData[dayKey];
+            const periodData = daySchedule[periodIndex];
+            
+            periodData.subject = subject;
+            periodData.teacher = teacher;
+            periodData.room = room;
+            periodData.time = normalizeTimeRange(time); // Normalize time range
+            periodData.period = period;
+            
+            // Close modal and refresh display
+            closeEditClassModal();
+            displaySchedule();
+            saveState();
+            
+            showMessage(`✅ Class updated: ${subject || 'Unnamed'}`, 'success');
+        }
+
+        function deleteClass() {
+            if (!currentEditingCell) return;
+            
+            const { dayKey, periodIndex, period } = currentEditingCell;
+            const className = period.subject || 'this class';
+            
+            if (confirm(`Are you sure you want to delete "${className}"?\n\nThis action cannot be undone.`)) {
+                const daySchedule = scheduleData[dayKey];
+                daySchedule.splice(periodIndex, 1);
+                
+                closeEditClassModal();
+                displaySchedule();
+                saveState();
+                
+                showMessage(`🗑️ Deleted: ${className}`, 'success');
+            }
+        }
+
+        function cancelEditClass() {
+            closeEditClassModal();
+        }
+
+        function closeEditClassModal() {
+            const modal = document.getElementById('editClassModal');
+            if (modal) {
+                modal.remove();
+            }
+            
+            // Remove editing class from cell
+            if (currentEditingCell && currentEditingCell.cellElement) {
+                currentEditingCell.cellElement.classList.remove('editing');
+            }
+            
+            // Clean up event listeners
+            document.removeEventListener('keydown', handleEditModalKeydown);
+            currentEditingCell = null;
+        }
+
+        function editClassCellById(dayKey, periodIndex) {
+            const daySchedule = scheduleData[dayKey];
+            if (!daySchedule || periodIndex < 0 || !daySchedule[periodIndex]) {
+                showMessage('❌ Unable to edit this class. Invalid data.', 'error');
+                return;
+            }
+            
+            const cellElement = event.target.closest('.class-cell');
+            const period = daySchedule[periodIndex];
+            currentEditingCell = { dayKey, periodIndex, scheduleType: dayKey.includes('A') ? 'A' : 'B', cellElement, period };
+            
+            // Add editing class to cell
+            if (cellElement) {
+                cellElement.classList.add('editing');
+            }
+            
+            showEditClassModal(period, dayKey);
+        }
+
+        function editClassCellFromMerged(dayName, time) {
+            // Find the first matching period from either A or B schedule
+            const dayKeyA = `${dayName}. A`;
+            const dayKeyB = `${dayName}. B`;
+            
+            let dayKey = null;
+            let periodIndex = -1;
+            
+            // Try A schedule first
+            if (scheduleData[dayKeyA]) {
+                periodIndex = scheduleData[dayKeyA].findIndex(p => p.time === time);
+                if (periodIndex >= 0) {
+                    dayKey = dayKeyA;
+                }
+            }
+            
+            // If not found in A, try B schedule
+            if (dayKey === null && scheduleData[dayKeyB]) {
+                periodIndex = scheduleData[dayKeyB].findIndex(p => p.time === time);
+                if (periodIndex >= 0) {
+                    dayKey = dayKeyB;
+                }
+            }
+            
+            if (dayKey && periodIndex >= 0) {
+                editClassCellById(dayKey, periodIndex);
+            } else {
+                showMessage('❌ Unable to edit this class. Period not found.', 'error');
+            }
+        }
+
+        function addNewClass(dayName, time) {
+            // Create a new class for this time slot
+            const dayKeyA = `${dayName}. A`;
+            const dayKeyB = `${dayName}. B`;
+            
+            // Determine which day to add to (prefer A if it exists)
+            let targetDayKey = dayKeyA;
+            if (!scheduleData[dayKeyA] && scheduleData[dayKeyB]) {
+                targetDayKey = dayKeyB;
+            } else if (!scheduleData[dayKeyA]) {
+                // Create the day schedule if it doesn't exist
+                scheduleData[dayKeyA] = [];
+            }
+            
+            // Create a new period
+            const newPeriod = {
+                period: `Period ${time.split(' ')[0]}`,
+                subject: '',
+                time: time,
+                teacher: '',
+                room: ''
+            };
+            
+            // Add to schedule and open editor
+            scheduleData[targetDayKey].push(newPeriod);
+            const periodIndex = scheduleData[targetDayKey].length - 1;
+            
+            // Open the edit modal immediately
+            const cellElement = event.target.closest('.class-cell');
+            currentEditingCell = { 
+                dayKey: targetDayKey, 
+                periodIndex, 
+                scheduleType: targetDayKey.includes('A') ? 'A' : 'B', 
+                cellElement, 
+                period: newPeriod 
+            };
+            
+            if (cellElement) {
+                cellElement.classList.add('editing');
+            }
+            
+            showEditClassModal(newPeriod, targetDayKey);
         }
 
         // UI State Management

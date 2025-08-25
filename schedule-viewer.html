@@ -1151,21 +1151,25 @@
         function normalizeTimeRange(timeRangeStr) {
             // Normalize time ranges like "01:53 - 02:50" to "1:53 PM - 2:50 PM"
             // Also fix incorrect AM/PM like "1:53 AM - 2:50 AM" during school hours
+            console.log(`normalizeTimeRange called with: "${timeRangeStr}"`);
+            
             if (!timeRangeStr || !timeRangeStr.includes('-')) {
                 return timeRangeStr;
             }
             
             // Split the time range
             const [startTimeStr, endTimeStr] = timeRangeStr.split('-').map(t => t.trim());
+            console.log(`Split into: start="${startTimeStr}", end="${endTimeStr}"`);
             
             // Check if this looks like a school schedule time that's incorrectly marked as AM
             const isIncorrectAM = (timeStr) => {
                 if (!timeStr.includes('AM')) return false;
                 
-                // Extract the hour from times like "1:53 AM" or "2:50 AM"
-                const hourMatch = timeStr.match(/^(\d{1,2}):/);
+                // Extract the hour from times like "1:53 AM", "01:53 AM" or "2:50 AM"
+                const hourMatch = timeStr.match(/^0?(\d{1,2}):/);
                 if (hourMatch) {
                     const hour = parseInt(hourMatch[1]);
+                    console.log(`Checking if ${timeStr} is incorrect AM: hour=${hour}, result=${hour >= 1 && hour <= 6}`);
                     // Times like 1:XX AM, 2:XX AM, 3:XX AM during school day should be PM
                     return hour >= 1 && hour <= 6;
                 }

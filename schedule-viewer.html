@@ -1260,8 +1260,10 @@
                                 endTime = minutesToTimeString(endMinutes);
                             }
                             
-                            period.time = `${startTime} - ${endTime}`;
-                            console.log(`Calculated time for ${period.subject}: ${period.time}`);
+                            // Create time range and normalize it to fix AM/PM issues
+                            const timeRange = `${startTime} - ${endTime}`;
+                            period.time = normalizeTimeRange(timeRange);
+                            console.log(`Calculated time for ${period.subject}: ${timeRange} → ${period.time}`);
                         } else {
                             // Can't extract time from period name, need user input
                             periodsNeedingTimes.push({

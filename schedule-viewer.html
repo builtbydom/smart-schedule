@@ -1642,6 +1642,8 @@
             
             // Refresh the display with updated times
             displaySchedule();
+            saveState(); // Save the updated schedule data to localStorage
+            showMessage('Times have been applied and schedule updated! 🎉', 'success');
         }
 
         function assignDefaultTimes(periodsNeedingTimes) {
@@ -1650,6 +1652,10 @@
                 const period = daySchedule[periodInfo.index];
                 assignDefaultTime(period, periodInfo.index);
             });
+            
+            // Refresh the display and save state
+            displaySchedule();
+            saveState();
         }
 
         function assignDefaultTime(period, index) {
@@ -1830,8 +1836,15 @@
                             if (!hasExplicitTime && lookAheadLine.includes('-')) {
                                 // Check if it looks like a time range (contains colons and dash)
                                 const timeRangePattern = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/;
-                                if (timeRangePattern.test(lookAheadLine) || 
-                                    (lookAheadLine.includes('AM') || lookAheadLine.includes('PM'))) {
+                                const isTimeRange = timeRangePattern.test(lookAheadLine) || 
+                                    (lookAheadLine.includes('AM') || lookAheadLine.includes('PM'));
+                                
+                                // Debug for homeroom periods
+                                if (currentPeriod.subject && currentPeriod.subject.toLowerCase().includes('homeroom')) {
+                                    console.log(`Time check for "${lookAheadLine}": pattern=${timeRangePattern.test(lookAheadLine)}, hasAMPM=${lookAheadLine.includes('AM') || lookAheadLine.includes('PM')}, isTimeRange=${isTimeRange}`);
+                                }
+                                
+                                if (isTimeRange) {
                                     // Normalize the time range to handle ambiguous formats
                                     currentPeriod.time = normalizeTimeRange(lookAheadLine);
                                     hasExplicitTime = true;

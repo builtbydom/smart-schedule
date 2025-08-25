@@ -1879,13 +1879,17 @@
                         }
                         
                         // Only add the period if it has valid data
-                        if (currentDay && 
-                            currentPeriod && 
-                            currentPeriod.subject && 
+                        // Special case: Keep homeroom periods even without times
+                        const isHomeroom = currentPeriod.period === 'Period HR';
+                        const hasValidSubject = currentPeriod.subject && 
                             currentPeriod.subject.trim().length > 0 &&
                             !currentPeriod.subject.toLowerCase().includes('undefined') &&
                             currentPeriod.subject !== '-' &&
-                            currentPeriod.subject !== 'null') {
+                            currentPeriod.subject !== 'null';
+                        
+                        if (currentDay && 
+                            currentPeriod && 
+                            hasValidSubject) {
                             
                             // Clean up any remaining whitespace or special characters
                             currentPeriod.subject = currentPeriod.subject.trim();
@@ -1918,14 +1922,15 @@
                 Object.keys(scheduleData).forEach(day => {
                     const beforeCount = scheduleData[day].length;
                     scheduleData[day] = scheduleData[day].filter(period => {
-                        const isValid = period.time && 
-                                       period.time.includes('-') && 
-                                       period.subject && 
+                        const isHomeroom = period.period === 'Period HR';
+                        const isValid = period.subject && 
                                        period.subject.trim().length > 0 &&
-                                       period.time.trim() !== '-' &&
                                        !period.subject.toLowerCase().includes('undefined');
                         
-                        if (!isValid) {
+                        // Special case: Keep homeroom periods even without times
+                        const shouldKeep = isHomeroom ? isValid : (isValid && period.time && period.time.includes('-') && period.time.trim() !== '-');
+                        
+                        if (!shouldKeep) {
                             console.log(`Removing invalid period from ${day}:`, period);
                             // Special debug for homeroom periods
                             if (period.period === 'Period HR') {
@@ -1934,7 +1939,7 @@
                                 console.log(`⚠️ Validation: time exists=${!!period.time}, time has dash=${period.time && period.time.includes('-')}, subject valid=${period.subject && period.subject.trim().length > 0}`);
                             }
                         }
-                        return isValid;
+                        return shouldKeep;
                     });
                     const afterCount = scheduleData[day].length;
                     if (beforeCount !== afterCount) {
@@ -2009,19 +2014,28 @@
             Object.values(scheduleData).forEach(daySchedule => {
                 daySchedule.forEach(period => {
                     // Debug homeroom periods during display
-                    if (period.subject && (period.subject.toLowerCase().includes('homeroom') || 
-                        period.subject.toLowerCase().includes('hr'))) {
+                    if (period.period === 'Period HR') {
                         console.log(`Display check - Homeroom: ${period.subject} - ${period.time} - Valid: ${period.time && period.time.includes('-') && period.subject.trim().length > 0}`);
                     }
                     
                     // Only include periods with valid time data AND meaningful content
-                    if (period.time && 
+                    // Special case: Include homeroom periods even without times (they'll be handled separately)
+                    const isHomeroom = period.period === 'Period HR';
+                    const hasValidTime = period.time && 
                         period.time.includes('-') && 
                         period.subject && 
                         period.subject.trim().length > 0 &&
                         !period.subject.toLowerCase().includes('undefined') &&
-                        period.time.trim() !== '-') {
-                        allTimes.add(period.time);
+                        period.time.trim() !== '-';
+                    
+                    if (hasValidTime || isHomeroom) {
+                        if (hasValidTime) {
+                            allTimes.add(period.time);
+                        }
+                        // For homeroom without time, we'll add a placeholder time for display
+                        if (isHomeroom && !hasValidTime) {
+                            allTimes.add('7:45 AM - 7:55 AM'); // Default homeroom time
+                        }
                     }
                 });
             });

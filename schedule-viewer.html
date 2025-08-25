@@ -1796,21 +1796,16 @@
                             room: ''
                         };
                         
-                        // Special handling for Period HR - check for time before subject
-                        if (line === 'Period HR' && i + 1 < lines.length) {
-                            const nextLine = lines[i + 1];
-                            // Check if next line contains a time range
-                            if (nextLine.includes('-') && (nextLine.includes('AM') || nextLine.includes('PM'))) {
-                                currentPeriod.time = normalizeTimeRange(nextLine);
-                                console.log(`Found HR time before subject: ${currentPeriod.time}`);
-                                i++; // Skip the time line
-                            }
+                        // Special handling for Period HR - check for time after subject
+                        if (line === 'Period HR') {
+                            console.log(`Found Period HR, will look for time after subject`);
                         }
                         
                         // Get subject (next line)
                         if (i + 1 < lines.length) {
                             i++;
                             currentPeriod.subject = lines[i].trim();
+                            console.log(`Parsing period: ${line} -> Subject: ${currentPeriod.subject}`);
                         }
                         
                         // Look ahead to find time range, teacher, and room info
@@ -1820,6 +1815,11 @@
                         // Scan the next few lines to find time, teacher, and room
                         while (lookAheadIndex < lines.length) {
                             const lookAheadLine = lines[lookAheadIndex];
+                            
+                            // Debug for homeroom periods
+                            if (currentPeriod.subject && currentPeriod.subject.toLowerCase().includes('homeroom')) {
+                                console.log(`Looking at line ${lookAheadIndex}: "${lookAheadLine}"`);
+                            }
                             
                             // Stop if we hit another period or day
                             if (lookAheadLine.startsWith('Period') || lookAheadLine.startsWith('Day:')) {
@@ -1836,6 +1836,11 @@
                                     currentPeriod.time = normalizeTimeRange(lookAheadLine);
                                     hasExplicitTime = true;
                                     console.log(`Found explicit time for ${currentPeriod.subject}: ${currentPeriod.time}`);
+                                    
+                                    // Special debug for homeroom
+                                    if (currentPeriod.subject && currentPeriod.subject.toLowerCase().includes('homeroom')) {
+                                        console.log(`🎯 HOMEROOM TIME FOUND: ${currentPeriod.time}`);
+                                    }
                                 }
                             }
                             
